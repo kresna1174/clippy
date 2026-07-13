@@ -43,6 +43,14 @@ class ClipboardStore {
         }
     }
 
+    func exists(type: ClipboardItemType, content: Data) throws -> Bool {
+        try db.read { db in
+            try ClipboardItem
+                .filter(Column("type") == type.rawValue && Column("content") == content)
+                .fetchCount(db) > 0
+        }
+    }
+
     func fetchLatest() throws -> ClipboardItem? {
         try db.read { db in
             try ClipboardItem.order(Column("createdAt").desc).fetchOne(db)

@@ -34,10 +34,8 @@ class ClipboardMonitor {
 
         guard let item = parseItem(from: pb) else { return }
 
-        // skip duplicate of latest
-        if let latest = try? store.fetchLatest(),
-           latest.type == item.type,
-           latest.content == item.content { return }
+        // skip if identical content already exists anywhere in history
+        if (try? store.exists(type: item.type, content: item.content)) == true { return }
 
         do {
             try store.insert(item)
