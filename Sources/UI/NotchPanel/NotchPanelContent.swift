@@ -32,8 +32,8 @@ struct NotchPanelContent: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // notch-height spacer — top stays black to match notch hardware
-            Color.black.frame(height: notchHeight)
+            // notch-height spacer — transparent, shows through to menu bar behind
+            Color.clear.frame(height: notchHeight)
 
             VStack(spacing: 0) {
                 // search bar
@@ -54,23 +54,40 @@ struct NotchPanelContent: View {
                     .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.vertical, 10)
 
-                Divider().background(Color.gray.opacity(0.3))
+                Divider().background(Color.gray.opacity(0.25))
 
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(displayedItems, id: \.id) { item in
                             ClipboardItemRow(item: item, onSelect: onSelect)
-                            Divider().background(Color.gray.opacity(0.2))
+                            Divider().background(Color.gray.opacity(0.15))
                         }
                     }
                 }
             }
-            .background(Color(white: 0.1))
-            .cornerRadius(12)
+            .background(Color(white: 0.12))
+            // top corners square (flush to notch), bottom corners rounded
+            .clipShape(
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 0,
+                    bottomLeadingRadius: 20,
+                    bottomTrailingRadius: 20,
+                    topTrailingRadius: 0
+                )
+            )
+            .overlay(
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 0,
+                    bottomLeadingRadius: 20,
+                    bottomTrailingRadius: 20,
+                    topTrailingRadius: 0
+                )
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.5), radius: 20, x: 0, y: 8)
         }
-        .background(Color.black)
         .onAppear { viewModel.reload() }
     }
 }

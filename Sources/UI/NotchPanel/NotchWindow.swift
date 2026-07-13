@@ -41,8 +41,8 @@ class NotchWindow: NSWindow {
             backing: .buffered,
             defer: false
         )
-        backgroundColor = .black
-        isOpaque = true
+        backgroundColor = .clear
+        isOpaque = false
         hasShadow = false
         level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.mainMenuWindow)) + 1)
         collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
