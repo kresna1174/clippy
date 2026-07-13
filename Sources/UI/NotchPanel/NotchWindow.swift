@@ -7,8 +7,16 @@ class NotchWindow: NSWindow {
 
     static func notchFrame(on screen: NSScreen) -> NSRect {
         let screenFrame = screen.frame
-        let notchWidth: CGFloat = 162
-        let notchHeight: CGFloat = 26
+        let notchHeight = screen.safeAreaInsets.top > 0 ? screen.safeAreaInsets.top : 26
+        if let leftArea = screen.auxiliaryTopLeftArea,
+           let rightArea = screen.auxiliaryTopRightArea {
+            let notchX = leftArea.maxX
+            let notchWidth = rightArea.minX - leftArea.maxX
+            let notchY = screenFrame.maxY - notchHeight
+            return NSRect(x: notchX, y: notchY, width: notchWidth, height: notchHeight)
+        }
+        // fallback for screens without notch API
+        let notchWidth: CGFloat = 200
         let x = screenFrame.midX - notchWidth / 2
         let y = screenFrame.maxY - notchHeight
         return NSRect(x: x, y: y, width: notchWidth, height: notchHeight)
@@ -18,7 +26,7 @@ class NotchWindow: NSWindow {
         let screenFrame = screen.frame
         let panelWidth: CGFloat = 480
         let panelHeight: CGFloat = 520
-        let notchHeight: CGFloat = 26
+        let notchHeight = screen.safeAreaInsets.top > 0 ? screen.safeAreaInsets.top : 26
         let x = screenFrame.midX - panelWidth / 2
         let y = screenFrame.maxY - notchHeight - panelHeight
         return NSRect(x: x, y: y, width: panelWidth, height: notchHeight + panelHeight)

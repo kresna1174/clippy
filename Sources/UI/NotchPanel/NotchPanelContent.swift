@@ -26,10 +26,14 @@ struct NotchPanelContent: View {
         searcher.search(query: searchQuery, in: viewModel.items)
     }
 
+    private var notchHeight: CGFloat {
+        NSScreen.main?.safeAreaInsets.top ?? 26
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // notch-height spacer — top stays black to match notch hardware
-            Color.black.frame(height: 26)
+            Color.black.frame(height: notchHeight)
 
             VStack(spacing: 0) {
                 // search bar
