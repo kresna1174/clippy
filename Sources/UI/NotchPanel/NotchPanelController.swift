@@ -6,6 +6,7 @@ class NotchPanelController {
     private var window: NotchWindow?
     private let store: ClipboardStore
     private var outsideClickMonitor: Any?
+    private var escKeyMonitor: Any?
     private var previousApp: NSRunningApplication?
 
     var onShowSettings: (() -> Void)?
@@ -57,7 +58,7 @@ class NotchPanelController {
         }
 
         // ESC key
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+        escKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 { // ESC
                 self?.hide()
                 return nil
@@ -70,6 +71,10 @@ class NotchPanelController {
         if let monitor = outsideClickMonitor {
             NSEvent.removeMonitor(monitor)
             outsideClickMonitor = nil
+        }
+        if let monitor = escKeyMonitor {
+            NSEvent.removeMonitor(monitor)
+            escKeyMonitor = nil
         }
         window?.animateCollapse {
             self.window?.orderOut(nil)
