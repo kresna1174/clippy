@@ -5,6 +5,7 @@ import SwiftUI
 class NotchPanelController {
     private var window: NotchWindow?
     private let store: ClipboardStore
+    private var viewModel: PanelViewModel?
     private var outsideClickMonitor: Any?
     private var escKeyMonitor: Any?
     private var previousApp: NSRunningApplication?
@@ -30,9 +31,11 @@ class NotchPanelController {
         previousApp = NSWorkspace.shared.frontmostApplication
 
         if window == nil {
+            let vm = PanelViewModel(store: store)
+            viewModel = vm
             let w = NotchWindow(screen: screen)
             let content = NotchPanelContent(
-                store: store,
+                viewModel: vm,
                 onSelect: { [weak self] item, isCommandClick in
                     self?.handleSelect(item: item, paste: isCommandClick)
                 },
@@ -44,6 +47,7 @@ class NotchPanelController {
             window = w
         }
 
+        viewModel?.reload()
         window?.makeKeyAndOrderFront(nil)
         window?.animateExpand()
 

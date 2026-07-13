@@ -1,17 +1,29 @@
 // Sources/UI/NotchPanel/NotchPanelContent.swift
 import SwiftUI
 
-struct NotchPanelContent: View {
+class PanelViewModel: ObservableObject {
+    @Published var items: [ClipboardItem] = []
     let store: ClipboardStore
+
+    init(store: ClipboardStore) {
+        self.store = store
+    }
+
+    func reload() {
+        items = (try? store.fetchAll()) ?? []
+    }
+}
+
+struct NotchPanelContent: View {
+    @ObservedObject var viewModel: PanelViewModel
     let onSelect: (ClipboardItem, Bool) -> Void
     let onSettings: () -> Void
 
-    @State private var items: [ClipboardItem] = []
     @State private var searchQuery = ""
     private let searcher = FuzzySearcher()
 
     private var displayedItems: [ClipboardItem] {
-        searcher.search(query: searchQuery, in: items)
+        searcher.search(query: searchQuery, in: viewModel.items)
     }
 
     var body: some View {
@@ -55,10 +67,6 @@ struct NotchPanelContent: View {
             .cornerRadius(12)
         }
         .background(Color.black)
-        .onAppear { reload() }
-    }
-
-    func reload() {
-        items = (try? store.fetchAll()) ?? []
+        .onAppear { viewModel.reload() }
     }
 }

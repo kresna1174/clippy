@@ -41,6 +41,9 @@ class NotchWindow: NSWindow {
         isReleasedWhenClosed = false
     }
 
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+
     func animateExpand(completion: (() -> Void)? = nil) {
         guard !isExpanded else { completion?(); return }
         let target = NotchWindow.expandedFrame(on: targetScreen)
