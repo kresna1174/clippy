@@ -17,7 +17,8 @@ let package = Package(
                 .product(name: "HotKey", package: "HotKey"),
                 .product(name: "Fuse", package: "fuse-swift"),
             ],
-            path: "Sources"
+            path: "Sources",
+            exclude: ["App/ClipboardManager.entitlements"]
         )
     ]
 )
