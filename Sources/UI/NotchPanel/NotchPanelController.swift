@@ -4,6 +4,7 @@ import SwiftUI
 
 class NotchPanelController {
     private var window: NotchWindow?
+    private var currentScreen: NSScreen?
     private let store: ClipboardStore
     private var viewModel: PanelViewModel?
     private var outsideClickMonitor: Any?
@@ -16,6 +17,13 @@ class NotchPanelController {
         self.store = store
     }
 
+    private func screenUnderMouse() -> NSScreen {
+        let loc = NSEvent.mouseLocation
+        return NSScreen.screens.first { NSMouseInRect(loc, $0.frame, false) }
+            ?? NSScreen.main
+            ?? NSScreen.screens[0]
+    }
+
     func toggle() {
         if let w = window, w.isExpanded {
             hide()
@@ -25,12 +33,20 @@ class NotchPanelController {
     }
 
     func show() {
-        guard let screen = NSScreen.main else { return }
+        let screen = screenUnderMouse()
 
         // remember the app that was active before we steal focus
         previousApp = NSWorkspace.shared.frontmostApplication
 
+        // recreate window if active screen changed
+        if window != nil && currentScreen !== screen {
+            window?.orderOut(nil)
+            window = nil
+            viewModel = nil
+        }
+
         if window == nil {
+            currentScreen = screen
             let vm = PanelViewModel(store: store)
             viewModel = vm
             let w = NotchWindow(screen: screen)
