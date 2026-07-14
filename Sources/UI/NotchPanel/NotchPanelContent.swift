@@ -89,7 +89,6 @@ struct NotchPanelContent: View {
                 )
                 .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
             )
-            .shadow(color: .black.opacity(0.5), radius: 30, x: 0, y: 12)
             .padding(.horizontal, shadowPad)
             .padding(.bottom, shadowPad)
         }

@@ -22,7 +22,7 @@ class NotchWindow: NSWindow {
         return NSRect(x: x, y: y, width: notchWidth, height: notchHeight)
     }
 
-    static let shadowPad: CGFloat = 24  // room for SwiftUI shadow to render
+    static let shadowPad: CGFloat = 4  // minimal padding for clean clipping
 
     static func expandedFrame(on screen: NSScreen) -> NSRect {
         let screenFrame = screen.frame
