@@ -12,11 +12,11 @@ struct ClipboardItemRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.preview)
                     .font(.system(size: 12))
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
                     .lineLimit(2)
                 Text(relativeTime)
                     .font(.system(size: 10))
-                    .foregroundColor(.gray)
+                    .foregroundColor(.secondary)
             }
             Spacer()
         }

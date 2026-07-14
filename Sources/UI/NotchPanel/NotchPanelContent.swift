@@ -41,16 +41,15 @@ struct NotchPanelContent: View {
                 // search bar
                 HStack {
                     Image(systemName: "magnifyingglass")
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
                         .font(.system(size: 12))
                     TextField("Search...", text: $searchQuery)
                         .textFieldStyle(.plain)
                         .font(.system(size: 13))
-                        .foregroundColor(.white)
                     Spacer()
                     Button(action: onSettings) {
                         Image(systemName: "gear")
-                            .foregroundColor(.gray)
+                            .foregroundColor(.secondary)
                             .font(.system(size: 13))
                     }
                     .buttonStyle(.plain)
@@ -58,18 +57,20 @@ struct NotchPanelContent: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
 
-                Divider().background(Color.gray.opacity(0.25))
+                Divider().opacity(0.4)
 
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(displayedItems, id: \.id) { item in
                             ClipboardItemRow(item: item, onSelect: onSelect)
-                            Divider().background(Color.gray.opacity(0.15))
+                            Divider().opacity(0.25)
                         }
                     }
                 }
             }
-            .background(Color(white: 0.12))
+            .background(
+                VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
+            )
             // top corners square (flush to notch), bottom corners rounded
             .clipShape(
                 UnevenRoundedRectangle(
@@ -86,9 +87,9 @@ struct NotchPanelContent: View {
                     bottomTrailingRadius: 20,
                     topTrailingRadius: 0
                 )
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
             )
-            .shadow(color: .black.opacity(0.6), radius: 30, x: 0, y: 12)
+            .shadow(color: .black.opacity(0.5), radius: 30, x: 0, y: 12)
             .padding(.horizontal, shadowPad)
             .padding(.bottom, shadowPad)
         }
