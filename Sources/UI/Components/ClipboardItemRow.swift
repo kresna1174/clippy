@@ -4,6 +4,8 @@ struct ClipboardItemRow: View {
     let item: ClipboardItem
     let onSelect: (ClipboardItem, Bool) -> Void
 
+    @State private var isHovered = false
+
     var body: some View {
         HStack(spacing: 8) {
             typeIcon
@@ -22,7 +24,10 @@ struct ClipboardItemRow: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
+        .background(isHovered ? Color.white.opacity(0.08) : Color.clear)
+        .animation(.easeInOut(duration: 0.12), value: isHovered)
         .contentShape(Rectangle())
+        .onHover { isHovered = $0 }
         .onTapGesture {
             let isCmd = NSEvent.modifierFlags.contains(.command)
             onSelect(item, isCmd)
