@@ -22,14 +22,17 @@ class NotchWindow: NSWindow {
         return NSRect(x: x, y: y, width: notchWidth, height: notchHeight)
     }
 
+    static let shadowPad: CGFloat = 24  // room for SwiftUI shadow to render
+
     static func expandedFrame(on screen: NSScreen) -> NSRect {
         let screenFrame = screen.frame
         let panelWidth: CGFloat = 480
         let panelHeight: CGFloat = 520
         let notchHeight = screen.safeAreaInsets.top > 0 ? screen.safeAreaInsets.top : 26
-        let x = screenFrame.midX - panelWidth / 2
-        let y = screenFrame.maxY - notchHeight - panelHeight
-        return NSRect(x: x, y: y, width: panelWidth, height: notchHeight + panelHeight)
+        let sp = shadowPad
+        let x = screenFrame.midX - panelWidth / 2 - sp
+        let y = screenFrame.maxY - notchHeight - panelHeight - sp
+        return NSRect(x: x, y: y, width: panelWidth + sp * 2, height: notchHeight + panelHeight + sp)
     }
 
     init(screen: NSScreen) {
@@ -55,7 +58,7 @@ class NotchWindow: NSWindow {
     func animateExpand(completion: (() -> Void)? = nil) {
         guard !isExpanded else { completion?(); return }
         let target = NotchWindow.expandedFrame(on: targetScreen)
-        hasShadow = true
+        hasShadow = false  // AppKit shadow is rectangular — use SwiftUI shadow instead
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.35
             ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
@@ -74,7 +77,6 @@ class NotchWindow: NSWindow {
             ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             self.animator().setFrame(target, display: true)
         } completionHandler: {
-            self.hasShadow = false
             self.isExpanded = false
             completion?()
         }

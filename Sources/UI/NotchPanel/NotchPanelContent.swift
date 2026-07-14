@@ -30,9 +30,11 @@ struct NotchPanelContent: View {
         NSScreen.main?.safeAreaInsets.top ?? 26
     }
 
+    private let shadowPad: CGFloat = NotchWindow.shadowPad
+
     var body: some View {
+        // outer padding matches window's shadowPad so content stays centered
         VStack(spacing: 0) {
-            // notch-height spacer — transparent, shows through to menu bar behind
             Color.clear.frame(height: notchHeight)
 
             VStack(spacing: 0) {
@@ -86,7 +88,9 @@ struct NotchPanelContent: View {
                 )
                 .stroke(Color.white.opacity(0.08), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.5), radius: 20, x: 0, y: 8)
+            .shadow(color: .black.opacity(0.6), radius: 30, x: 0, y: 12)
+            .padding(.horizontal, shadowPad)
+            .padding(.bottom, shadowPad)
         }
         .onAppear { viewModel.reload() }
     }
