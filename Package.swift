@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "ClipboardManager",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v14)],
     dependencies: [
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "6.0.0"),
         .package(url: "https://github.com/soffes/HotKey.git", from: "0.2.0"),
@@ -18,7 +18,7 @@ let package = Package(
                 .product(name: "Fuse", package: "fuse-swift"),
             ],
             path: "Sources",
-            exclude: ["App/ClipboardManager.entitlements"]
+            exclude: ["App/ClipboardManager.entitlements", "App/Info.plist"]
         )
     ]
 )
