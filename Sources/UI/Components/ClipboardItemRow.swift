@@ -60,7 +60,7 @@ struct ClipboardItemRow: View {
         case .image:
             if let img = NSImage(data: item.content) {
                 Image(nsImage: img).resizable().scaledToFill()
-                    .frame(width: 20, height: 20).clipped().cornerRadius(3)
+                    .frame(width: 20, height: 20).clipped().clipShape(RoundedRectangle(cornerRadius: 3))
             } else {
                 Image(systemName: "photo").foregroundColor(.purple)
             }
@@ -69,10 +69,14 @@ struct ClipboardItemRow: View {
         }
     }
 
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f
+    }()
+
     private var relativeTime: String {
         let date = Date(timeIntervalSince1970: TimeInterval(item.createdAt))
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
+        return Self.relativeFormatter.localizedString(for: date, relativeTo: Date())
     }
 }

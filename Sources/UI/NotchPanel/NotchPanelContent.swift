@@ -121,6 +121,7 @@ struct NotchPanelContent: View {
         let count = displayedItems.count
         switch press.key {
         case .downArrow:
+            guard count > 0 else { return .handled }
             searchFocused = false
             selectedIndex = min((selectedIndex ?? -1) + 1, count - 1)
             return .handled
