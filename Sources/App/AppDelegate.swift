@@ -6,13 +6,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var store: ClipboardStore!
     private var monitor: ClipboardMonitor!
     private var hotkey: HotkeyManager!
-    private var panelController: NotchPanelController!
+    private var coordinator: PanelCoordinator!
     private var menuBar: MenuBarController!
     private var settingsWindow: NSWindow?
+    private let prefs = AppPreferences.shared
 
-    @AppStorage("sizeLimitMB") private var sizeLimitMB: Double = 500
+    @AppStorage("sizeLimitMB") private var sizeLimitMB: Double = 10
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSRunningApplication
+            .runningApplications(withBundleIdentifier: "com.clipboardmanager.app")
+            .filter { $0 != NSRunningApplication.current }
+            .forEach { $0.terminate() }
+
         NSApp.setActivationPolicy(.accessory)
 
         do {
@@ -25,24 +31,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         monitor.onNewItem = { _ in }
         monitor.start()
 
-        panelController = NotchPanelController(store: store)
-        panelController.onShowSettings = { [weak self] in
-            self?.showSettings()
-        }
+        coordinator = PanelCoordinator(store: store, prefs: prefs)
+        coordinator.onShowSettings = { [weak self] in self?.showSettings() }
 
         hotkey = HotkeyManager()
         hotkey.register { [weak self] in
-            DispatchQueue.main.async { self?.panelController.toggle() }
+            DispatchQueue.main.async { self?.coordinator.toggle() }
         }
 
         menuBar = MenuBarController()
         menuBar.start { [weak self] in
-            DispatchQueue.main.async { self?.panelController.toggle() }
+            DispatchQueue.main.async { self?.coordinator.toggle() }
         }
-
-        // initialize the window at notch position (collapsed)
-        panelController.show()
-        panelController.hide()
     }
 
     private func showSettings() {
@@ -53,13 +53,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             )
             let view = SettingsView(
                 store: store,
+                prefs: prefs,
                 sizeLimitMB: sizeLimitBinding,
-                onDismiss: { [weak self] in
-                    self?.settingsWindow?.close()
-                }
+                onDismiss: { [weak self] in self?.settingsWindow?.close() }
             )
             let w = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 320, height: 280),
+                contentRect: NSRect(x: 0, y: 0, width: 320, height: 340),
                 styleMask: [.titled, .closable],
                 backing: .buffered,
                 defer: false
