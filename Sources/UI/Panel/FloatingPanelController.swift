@@ -22,6 +22,7 @@ class FloatingPanelController {
     }
 
     func show() {
+        guard !isVisible else { return }
         previousApp = NSWorkspace.shared.frontmostApplication
 
         let origin = resolvePopupOrigin()
