@@ -68,7 +68,7 @@ struct SettingsView: View {
                         .foregroundColor(currentUsageMB >= sizeLimitMB ? .red : .gray)
                         .font(.system(size: 11))
                 }
-                Slider(value: $sizeLimitMB, in: 10...500, step: 10)
+                Slider(value: $sizeLimitMB, in: 100...2000, step: 100)
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         RoundedRectangle(cornerRadius: 2)

@@ -34,7 +34,7 @@ class FloatingPanelController {
         viewModel = vm
 
         let w = FloatingPanelWindow(frame: frame)
-        let content = NotchPanelContent(
+        var content = NotchPanelContent(
             viewModel: vm,
             onSelect: { [weak self] item, isCommandClick in
                 self?.handleSelect(item: item, paste: isCommandClick)
@@ -48,10 +48,10 @@ class FloatingPanelController {
                 self?.onShowSettings?()
             }
         )
+        content.isFloating = true
         w.contentView = NSHostingView(rootView: content)
         window = w
 
-        vm.reload()
         w.makeKeyAndOrderFront(nil)
         isVisible = true
 
@@ -109,7 +109,8 @@ class FloatingPanelController {
     private func resolvePopupOrigin() -> CGPoint {
         if let rect = axCaretRect() {
             // AX returns Quartz coords (Y from bottom of main screen); convert to AppKit
-            let flippedY = (NSScreen.main?.frame.maxY ?? 0) - rect.maxY
+            let screen = screenContaining(CGPoint(x: rect.midX, y: rect.midY))
+            let flippedY = screen.frame.maxY - rect.maxY
             return CGPoint(x: rect.minX, y: flippedY - 8)
         }
         return NSEvent.mouseLocation

@@ -15,6 +15,7 @@ struct NotchPanelContent: View {
     let onSelect: (ClipboardItem, Bool) -> Void
     let onPin: (ClipboardItem) -> Void
     let onSettings: () -> Void
+    var isFloating: Bool = false
 
     @State private var searchQuery = ""
     @State private var isVisible = false
@@ -32,7 +33,9 @@ struct NotchPanelContent: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Color.clear.frame(height: notchHeight)
+            if !isFloating {
+                Color.clear.frame(height: notchHeight)
+            }
 
             VStack(spacing: 0) {
                 // header
@@ -87,17 +90,30 @@ struct NotchPanelContent: View {
             }
             .background(VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow))
             .clipShape(
-                UnevenRoundedRectangle(
-                    topLeadingRadius: 0, bottomLeadingRadius: 20,
-                    bottomTrailingRadius: 20, topTrailingRadius: 0
-                )
+                isFloating
+                    ? AnyShape(RoundedRectangle(cornerRadius: 20))
+                    : AnyShape(UnevenRoundedRectangle(
+                        topLeadingRadius: 0,
+                        bottomLeadingRadius: 20,
+                        bottomTrailingRadius: 20,
+                        topTrailingRadius: 0
+                      ))
             )
             .overlay(
-                UnevenRoundedRectangle(
-                    topLeadingRadius: 0, bottomLeadingRadius: 20,
-                    bottomTrailingRadius: 20, topTrailingRadius: 0
-                )
-                .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+                Group {
+                    if isFloating {
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+                    } else {
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: 0,
+                            bottomLeadingRadius: 20,
+                            bottomTrailingRadius: 20,
+                            topTrailingRadius: 0
+                        )
+                        .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+                    }
+                }
             )
             .padding(.horizontal, shadowPad)
             .padding(.bottom, shadowPad)
@@ -115,6 +131,7 @@ struct NotchPanelContent: View {
         }
         .onDisappear { isVisible = false }
         .onChange(of: searchQuery) { _ in selectedIndex = nil }
+        .onChange(of: viewModel.items.map(\.id)) { _ in selectedIndex = nil }
     }
 
     private func handleKeyPress(_ press: KeyPress) -> KeyPress.Result {
