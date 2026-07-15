@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "ClipboardManager",
+    name: "Clippy",
     platforms: [.macOS(.v14)],
     dependencies: [
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "6.0.0"),
@@ -11,14 +11,14 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "ClipboardManager",
+            name: "Clippy",
             dependencies: [
                 .product(name: "GRDB", package: "GRDB.swift"),
                 .product(name: "HotKey", package: "HotKey"),
                 .product(name: "Fuse", package: "fuse-swift"),
             ],
             path: "Sources",
-            exclude: ["App/ClipboardManager.entitlements", "App/Info.plist"]
+            exclude: ["App/Clippy.entitlements", "App/Info.plist"]
         )
     ]
 )

@@ -55,6 +55,11 @@ class NotchPanelController {
                 onSelect: { [weak self] item, isCommandClick in
                     self?.handleSelect(item: item, paste: isCommandClick)
                 },
+                onPin: { [weak self] item in
+                    guard let self else { return }
+                    try? self.store.togglePin(id: item.id)
+                    self.viewModel?.reload()
+                },
                 onSettings: { [weak self] in
                     self?.onShowSettings?()
                 }
@@ -96,8 +101,11 @@ class NotchPanelController {
             NSEvent.removeMonitor(monitor)
             escKeyMonitor = nil
         }
-        window?.animateCollapse {
-            self.window?.orderOut(nil)
+        window?.animateCollapse { [weak self] in
+            self?.window?.orderOut(nil)
+            self?.window = nil
+            self?.viewModel = nil
+            self?.currentScreen = nil
         }
     }
 

@@ -29,6 +29,11 @@ class ClipboardStore {
                 t.column("sizeBytes", .integer).notNull()
             }
         }
+        migrator.registerMigration("v2") { db in
+            try db.alter(table: "items") { t in
+                t.add(column: "isPinned", .boolean).notNull().defaults(to: false)
+            }
+        }
         try migrator.migrate(db)
     }
 
@@ -39,7 +44,18 @@ class ClipboardStore {
 
     func fetchAll() throws -> [ClipboardItem] {
         try db.read { db in
-            try ClipboardItem.order(Column("createdAt").desc).fetchAll(db)
+            try ClipboardItem
+                .order(Column("isPinned").desc, Column("createdAt").desc)
+                .fetchAll(db)
+        }
+    }
+
+    func togglePin(id: String) throws {
+        try db.write { db in
+            if var item = try ClipboardItem.fetchOne(db, key: id) {
+                item.isPinned.toggle()
+                try item.update(db)
+            }
         }
     }
 
@@ -48,6 +64,12 @@ class ClipboardStore {
             try ClipboardItem
                 .filter(Column("type") == type.rawValue && Column("content") == content)
                 .fetchCount(db) > 0
+        }
+    }
+
+    func totalSizeBytes() throws -> Int64 {
+        try db.read { db in
+            try Int64.fetchOne(db, sql: "SELECT COALESCE(SUM(sizeBytes), 0) FROM items") ?? 0
         }
     }
 
@@ -73,7 +95,10 @@ class ClipboardStore {
             guard totalSize > sizeLimitBytes else { return }
             let excess = totalSize - sizeLimitBytes
             var freed: Int64 = 0
-            let oldest = try ClipboardItem.order(Column("createdAt").asc).fetchAll(db)
+            let oldest = try ClipboardItem
+                .filter(Column("isPinned") == false)
+                .order(Column("createdAt").asc)
+                .fetchAll(db)
             for item in oldest {
                 try ClipboardItem.deleteOne(db, key: item.id)
                 freed += Int64(item.sizeBytes)

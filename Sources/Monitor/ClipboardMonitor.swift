@@ -61,7 +61,7 @@ class ClipboardMonitor {
             guard let tiff = image.tiffRepresentation,
                   let rep = NSBitmapImageRep(data: tiff),
                   let png = rep.representation(using: .png, properties: [:]) else { return nil }
-            guard png.count <= 10_000_000 else {
+            guard png.count <= 50_000_000 else {
                 print("[ClipboardMonitor] image too large (\(png.count) bytes), skipping")
                 return nil
             }

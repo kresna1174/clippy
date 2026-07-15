@@ -1,6 +1,8 @@
-# ClipboardManager
+# Clippy
 
 A lightweight macOS clipboard history manager that lives in your notch or follows your cursor.
+
+![ClipboardManager panel](images.png)
 
 ## Features
 
@@ -19,17 +21,17 @@ A lightweight macOS clipboard history manager that lives in your notch or follow
 ## Install
 
 ```bash
-git clone https://github.com/your-username/ClipboardManager
-cd ClipboardManager
+git clone https://github.com/your-username/Clippy
+cd Clippy
 bash install.sh
 ```
 
-`install.sh` builds a release binary, creates `ClipboardManager.app` in `/Applications`, and registers a LaunchAgent so it starts automatically on login.
+`install.sh` builds a release binary, creates `Clippy.app` in `/Applications`, and registers a LaunchAgent so it starts automatically on login.
 
 ### Accessibility Permission
 
 For **cursor-follow mode**, grant Accessibility access when prompted, or go to:  
-**System Settings → Privacy & Security → Accessibility** → enable ClipboardManager.
+**System Settings → Privacy & Security → Accessibility** → enable Clippy.
 
 ## Uninstall
 

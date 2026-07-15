@@ -11,8 +11,9 @@ struct ClipboardItem: Codable, FetchableRecord, PersistableRecord {
     var type: ClipboardItemType
     var content: Data
     var preview: String
-    var createdAt: Int   // Unix timestamp seconds
+    var createdAt: Int
     var sizeBytes: Int
+    var isPinned: Bool
 
     init(type: ClipboardItemType, content: Data, preview: String) {
         self.id = UUID().uuidString
@@ -21,5 +22,6 @@ struct ClipboardItem: Codable, FetchableRecord, PersistableRecord {
         self.preview = preview
         self.createdAt = Int(Date().timeIntervalSince1970)
         self.sizeBytes = content.count
+        self.isPinned = false
     }
 }
