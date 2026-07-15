@@ -11,7 +11,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private let prefs = AppPreferences.shared
 
-    @AppStorage("sizeLimitMB") private var sizeLimitMB: Double = 10
+    @AppStorage("sizeLimitMB") private var sizeLimitMB: Double = 500
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSRunningApplication
