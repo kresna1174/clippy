@@ -46,6 +46,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showSettings() {
+        coordinator?.hide()
         if settingsWindow == nil {
             let sizeLimitBinding = Binding<Double>(
                 get: { self.sizeLimitMB },
@@ -68,6 +69,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             w.center()
             settingsWindow = w
         }
+        settingsWindow?.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.mainMenuWindow)) + 2)
         settingsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
