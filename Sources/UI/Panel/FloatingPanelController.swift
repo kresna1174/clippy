@@ -9,12 +9,14 @@ class FloatingPanelController {
     private var escKeyMonitor: Any?
     private var previousApp: NSRunningApplication?
     private let store: ClipboardStore
+    private let shortcutsViewModel: ShortcutsViewModel
 
     var onShowSettings: (() -> Void)?
     private(set) var isVisible = false
 
-    init(store: ClipboardStore) {
+    init(store: ClipboardStore, shortcutsViewModel: ShortcutsViewModel) {
         self.store = store
+        self.shortcutsViewModel = shortcutsViewModel
     }
 
     func toggle() {
@@ -36,6 +38,7 @@ class FloatingPanelController {
         let w = FloatingPanelWindow(frame: frame)
         var content = NotchPanelContent(
             viewModel: vm,
+            shortcutsViewModel: shortcutsViewModel,
             onSelect: { [weak self] item, isCommandClick in
                 self?.handleSelect(item: item, paste: isCommandClick)
             },
@@ -46,6 +49,9 @@ class FloatingPanelController {
             },
             onSettings: { [weak self] in
                 self?.onShowSettings?()
+            },
+            onRunShortcut: { shortcut in
+                ShortcutRunner.shared.run(shortcut)
             }
         )
         content.isFloating = true
@@ -57,6 +63,8 @@ class FloatingPanelController {
 
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { [weak self] _ in
             guard let self, let w = self.window else { return }
+            // Don't hide if a modal (e.g. NSOpenPanel) is active
+            guard NSApp.modalWindow == nil else { return }
             if !NSMouseInRect(NSEvent.mouseLocation, w.frame, false) { self.hide() }
         }
 

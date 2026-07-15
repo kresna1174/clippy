@@ -11,11 +11,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private let prefs = AppPreferences.shared
 
+    // Shortcuts
+    private var shortcutStore: ShortcutStore!
+    private var shortcutsViewModel: ShortcutsViewModel!
+    private var shortcutHotkeyManager: ShortcutHotkeyManager!
+
     @AppStorage("sizeLimitMB") private var sizeLimitMB: Double = 500
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSRunningApplication
-            .runningApplications(withBundleIdentifier: "com.clipboardmanager.app")
+            .runningApplications(withBundleIdentifier: "com.clippy.app")
             .filter { $0 != NSRunningApplication.current }
             .forEach { $0.terminate() }
 
@@ -23,6 +28,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         do {
             store = try ClipboardStore(sizeLimitBytes: Int64(sizeLimitMB * 1_000_000))
+            shortcutStore = try ShortcutStore(db: store.db)
         } catch {
             fatalError("Cannot open database: \(error)")
         }
@@ -31,7 +37,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         monitor.onNewItem = { _ in }
         monitor.start()
 
-        coordinator = PanelCoordinator(store: store, prefs: prefs)
+        // Shortcuts ViewModel + hotkey manager
+        shortcutsViewModel = ShortcutsViewModel(store: shortcutStore)
+        shortcutHotkeyManager = ShortcutHotkeyManager()
+        shortcutHotkeyManager.onTrigger = { [weak self] shortcut in
+            DispatchQueue.main.async {
+                self?.coordinator?.hide()
+                ShortcutRunner.shared.run(shortcut)
+            }
+        }
+        shortcutsViewModel.onReloadHotkeys = { [weak self] shortcuts in
+            self?.shortcutHotkeyManager.reload(shortcuts: shortcuts)
+        }
+        shortcutHotkeyManager.reload(shortcuts: shortcutsViewModel.shortcuts)
+
+        coordinator = PanelCoordinator(store: store, prefs: prefs, shortcutsViewModel: shortcutsViewModel)
         coordinator.onShowSettings = { [weak self] in self?.showSettings() }
 
         hotkey = HotkeyManager()
@@ -64,7 +84,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 backing: .buffered,
                 defer: false
             )
-            w.title = "ClipboardManager Settings"
+            w.title = "Clippy Settings"
             w.contentView = NSHostingView(rootView: view)
             w.center()
             settingsWindow = w

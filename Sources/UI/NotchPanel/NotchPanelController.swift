@@ -6,6 +6,7 @@ class NotchPanelController {
     private var window: NotchWindow?
     private var currentScreen: NSScreen?
     private let store: ClipboardStore
+    private let shortcutsViewModel: ShortcutsViewModel
     private var viewModel: PanelViewModel?
     private var outsideClickMonitor: Any?
     private var escKeyMonitor: Any?
@@ -13,8 +14,9 @@ class NotchPanelController {
 
     var onShowSettings: (() -> Void)?
 
-    init(store: ClipboardStore) {
+    init(store: ClipboardStore, shortcutsViewModel: ShortcutsViewModel) {
         self.store = store
+        self.shortcutsViewModel = shortcutsViewModel
     }
 
     private func screenUnderMouse() -> NSScreen {
@@ -52,6 +54,7 @@ class NotchPanelController {
             let w = NotchWindow(screen: screen)
             let content = NotchPanelContent(
                 viewModel: vm,
+                shortcutsViewModel: shortcutsViewModel,
                 onSelect: { [weak self] item, isCommandClick in
                     self?.handleSelect(item: item, paste: isCommandClick)
                 },
@@ -62,6 +65,9 @@ class NotchPanelController {
                 },
                 onSettings: { [weak self] in
                     self?.onShowSettings?()
+                },
+                onRunShortcut: { shortcut in
+                    ShortcutRunner.shared.run(shortcut)
                 }
             )
             w.contentView = NSHostingView(rootView: content)
@@ -76,6 +82,8 @@ class NotchPanelController {
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) {
             [weak self] event in
             guard let self, let w = self.window else { return }
+            // Don't hide if a modal (e.g. NSOpenPanel) is active
+            guard NSApp.modalWindow == nil else { return }
             let screenLoc = NSEvent.mouseLocation
             if !NSMouseInRect(screenLoc, w.frame, false) {
                 self.hide()

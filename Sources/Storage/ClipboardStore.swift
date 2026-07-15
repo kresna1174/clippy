@@ -2,14 +2,14 @@ import Foundation
 import GRDB
 
 class ClipboardStore {
-    private let db: DatabaseQueue
+    let db: DatabaseQueue
     private let sizeLimitBytes: Int64
 
     init(sizeLimitBytes: Int64 = 500_000_000) throws {
         let appSupport = FileManager.default.urls(
             for: .applicationSupportDirectory, in: .userDomainMask
         ).first!
-        let dir = appSupport.appendingPathComponent("ClipboardManager")
+        let dir = appSupport.appendingPathComponent("Clippy")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let dbURL = dir.appendingPathComponent("history.db")
         db = try DatabaseQueue(path: dbURL.path)
