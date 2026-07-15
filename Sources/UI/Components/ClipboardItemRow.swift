@@ -1,8 +1,11 @@
+// Sources/UI/Components/ClipboardItemRow.swift
 import SwiftUI
 
 struct ClipboardItemRow: View {
     let item: ClipboardItem
+    let isSelected: Bool
     let onSelect: (ClipboardItem, Bool) -> Void
+    let onPin: (ClipboardItem) -> Void
 
     @State private var isHovered = false
 
@@ -21,11 +24,26 @@ struct ClipboardItemRow: View {
                     .foregroundColor(.secondary)
             }
             Spacer()
+
+            if item.isPinned || isHovered {
+                Button(action: { onPin(item) }) {
+                    Image(systemName: item.isPinned ? "pin.fill" : "pin")
+                        .font(.system(size: 11))
+                        .foregroundColor(item.isPinned ? .yellow : .secondary)
+                }
+                .buttonStyle(.plain)
+                .transition(.opacity)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(isHovered ? Color.white.opacity(0.08) : Color.clear)
+        .background(
+            isSelected
+                ? Color.accentColor.opacity(0.25)
+                : isHovered ? Color.white.opacity(0.08) : Color.clear
+        )
         .animation(.easeInOut(duration: 0.12), value: isHovered)
+        .animation(.easeInOut(duration: 0.1), value: isSelected)
         .contentShape(Rectangle())
         .onHover { isHovered = $0 }
         .onTapGesture {
@@ -38,23 +56,16 @@ struct ClipboardItemRow: View {
     private var typeIcon: some View {
         switch item.type {
         case .text:
-            Image(systemName: "doc.text")
-                .foregroundColor(.blue)
+            Image(systemName: "doc.text").foregroundColor(.blue)
         case .image:
             if let img = NSImage(data: item.content) {
-                Image(nsImage: img)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 20, height: 20)
-                    .clipped()
-                    .cornerRadius(3)
+                Image(nsImage: img).resizable().scaledToFill()
+                    .frame(width: 20, height: 20).clipped().cornerRadius(3)
             } else {
-                Image(systemName: "photo")
-                    .foregroundColor(.purple)
+                Image(systemName: "photo").foregroundColor(.purple)
             }
         case .file:
-            Image(systemName: "doc")
-                .foregroundColor(.orange)
+            Image(systemName: "doc").foregroundColor(.orange)
         }
     }
 
