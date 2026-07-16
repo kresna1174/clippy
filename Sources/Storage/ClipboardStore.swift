@@ -67,6 +67,14 @@ class ClipboardStore {
         }
     }
 
+    func deleteExisting(type: ClipboardItemType, content: Data) throws {
+        try db.write { db in
+            try ClipboardItem
+                .filter(Column("type") == type.rawValue && Column("content") == content)
+                .deleteAll(db)
+        }
+    }
+
     func totalSizeBytes() throws -> Int64 {
         try db.read { db in
             try Int64.fetchOne(db, sql: "SELECT COALESCE(SUM(sizeBytes), 0) FROM items") ?? 0

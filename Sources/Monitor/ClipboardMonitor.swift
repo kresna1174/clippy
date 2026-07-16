@@ -34,8 +34,8 @@ class ClipboardMonitor {
 
         guard let item = parseItem(from: pb) else { return }
 
-        // skip if identical content already exists anywhere in history
-        if (try? store.exists(type: item.type, content: item.content)) == true { return }
+        // remove duplicate if exists, then insert fresh (brings it to top)
+        try? store.deleteExisting(type: item.type, content: item.content)
 
         do {
             try store.insert(item)
