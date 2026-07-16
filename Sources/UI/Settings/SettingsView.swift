@@ -88,6 +88,9 @@ struct SettingsView: View {
             Toggle("Launch at login", isOn: $launchAtLogin)
                 .foregroundColor(.white)
                 .font(.system(size: 12))
+                .onAppear {
+                    launchAtLogin = SMAppService.mainApp.status == .enabled
+                }
                 .onChange(of: launchAtLogin) { newValue in
                     if newValue { try? SMAppService.mainApp.register() }
                     else { try? SMAppService.mainApp.unregister() }
