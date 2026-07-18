@@ -76,6 +76,7 @@ class NotchPanelController {
 
         viewModel?.reload()
         window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
         window?.animateExpand()
 
         // dismiss on outside click
@@ -138,20 +139,7 @@ class NotchPanelController {
         hide()
 
         if paste {
-            // re-activate previous app then simulate ⌘V
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                self.previousApp?.activate(options: .activateIgnoringOtherApps)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    let src = CGEventSource(stateID: .hidSystemState)
-                    let vKey: CGKeyCode = 9 // V
-                    let down = CGEvent(keyboardEventSource: src, virtualKey: vKey, keyDown: true)
-                    let up = CGEvent(keyboardEventSource: src, virtualKey: vKey, keyDown: false)
-                    down?.flags = .maskCommand
-                    up?.flags = .maskCommand
-                    down?.post(tap: .cgAnnotatedSessionEventTap)
-                    up?.post(tap: .cgAnnotatedSessionEventTap)
-                }
-            }
+            simulatePaste(into: previousApp)
         }
     }
 }

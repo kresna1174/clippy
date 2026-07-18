@@ -59,6 +59,7 @@ class FloatingPanelController {
         window = w
 
         w.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
         isVisible = true
 
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { [weak self] _ in
@@ -100,17 +101,7 @@ class FloatingPanelController {
         }
         hide()
         if paste {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                self.previousApp?.activate(options: .activateIgnoringOtherApps)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    let src = CGEventSource(stateID: .hidSystemState)
-                    let down = CGEvent(keyboardEventSource: src, virtualKey: 9, keyDown: true)
-                    let up   = CGEvent(keyboardEventSource: src, virtualKey: 9, keyDown: false)
-                    down?.flags = .maskCommand; up?.flags = .maskCommand
-                    down?.post(tap: .cgAnnotatedSessionEventTap)
-                    up?.post(tap: .cgAnnotatedSessionEventTap)
-                }
-            }
+            simulatePaste(into: previousApp)
         }
     }
 

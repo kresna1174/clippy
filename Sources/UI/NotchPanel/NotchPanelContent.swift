@@ -34,7 +34,7 @@ struct NotchPanelContent: View {
     @State private var isVisible = false
     @State private var selectedIndex: Int? = nil
     @State private var activeTab: PanelTab = .clipboard
-    @FocusState private var searchFocused: Bool
+    @State private var searchFocused: Bool = false
 
     private let searcher = FuzzySearcher()
 
@@ -85,13 +85,8 @@ struct NotchPanelContent: View {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.secondary)
                             .font(.system(size: 12))
-                        TextField(
-                            activeTab == .clipboard ? "Search clipboard…" : "Search shortcuts…",
-                            text: $searchQuery
-                        )
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 13))
-                        .focused($searchFocused)
+                        searchField
+                            .frame(height: 18)
 
                         if activeTab == .clipboard {
                             Text("\(viewModel.items.count) items")
@@ -226,6 +221,33 @@ struct NotchPanelContent: View {
             searchQuery: $searchQuery,
             onRun: onRunShortcut
         )
+    }
+
+    // MARK: - Search Field
+
+    private var searchField: some View {
+        NavigableTextField(
+            placeholder: activeTab == .clipboard ? "Search clipboard…" : "Search shortcuts…",
+            text: $searchQuery,
+            isFocused: $searchFocused,
+            onNavigate: handleSearchNav
+        )
+    }
+
+    private func handleSearchNav(_ dir: NavDirection) {
+        guard activeTab == .clipboard else { return }
+        let count = displayedItems.count
+        switch dir {
+        case .down:
+            guard count > 0 else { return }
+            selectedIndex = min((selectedIndex ?? -1) + 1, count - 1)
+        case .up:
+            let next = (selectedIndex ?? count) - 1
+            selectedIndex = next < 0 ? nil : next
+        case .confirm:
+            guard let idx = selectedIndex, idx < count else { return }
+            onSelect(displayedItems[idx], true)
+        }
     }
 
     // MARK: - Keyboard handling
