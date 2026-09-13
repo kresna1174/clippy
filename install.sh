@@ -23,6 +23,7 @@ cp "Sources/App/Info.plist" "$APP_DEST/Contents/Info.plist"
 cp "Sources/App/AppIcon.icns" "$APP_DEST/Contents/Resources/AppIcon.icns"
 
 echo "Installing LaunchAgent for login autostart..."
+mkdir -p "$(dirname "$LAUNCH_AGENT")"
 cat > "$LAUNCH_AGENT" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
