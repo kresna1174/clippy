@@ -34,56 +34,66 @@ class ClipboardStore {
                 t.add(column: "isPinned", .boolean).notNull().defaults(to: false)
             }
         }
+        migrator.registerMigration("v3") { db in
+            try db.alter(table: "items") { t in
+                t.add(column: "thumbnail", .blob)
+            }
+        }
         try migrator.migrate(db)
     }
 
-    func insert(_ item: ClipboardItem) throws {
-        try db.write { db in try item.insert(db) }
+    /// Record a freshly-copied clip. If an item with identical type+content
+    /// already exists, it's moved to the top in place (preserving its id and
+    /// pin state) instead of being deleted and re-inserted — one write
+    /// instead of two, and pinned items no longer lose their pin when the
+    /// same content is copied again.
+    func recordNewClip(_ item: ClipboardItem) throws {
+        try db.write { db in
+            let existingID = try String.fetchOne(
+                db,
+                sql: "SELECT id FROM items WHERE type = ? AND content = ? LIMIT 1",
+                arguments: [item.type.rawValue, item.content]
+            )
+            if let existingID {
+                try db.execute(
+                    sql: "UPDATE items SET createdAt = ?, preview = ?, thumbnail = ? WHERE id = ?",
+                    arguments: [item.createdAt, item.preview, item.thumbnail, existingID]
+                )
+            } else {
+                try item.insert(db)
+            }
+        }
         try pruneIfNeeded()
     }
 
-    func fetchAll() throws -> [ClipboardItem] {
+    /// List/search projection — never touches the `content` column, so
+    /// browsing history doesn't load large image/file blobs into memory.
+    func fetchAllSummaries() throws -> [ClipboardItemSummary] {
         try db.read { db in
-            try ClipboardItem
+            try ClipboardItemSummary
                 .order(Column("isPinned").desc, Column("createdAt").desc)
                 .fetchAll(db)
         }
     }
 
+    /// Fetch the full payload for one item, e.g. right before writing it to
+    /// the pasteboard. Kept separate from the summary so it's only paid for
+    /// when actually needed.
+    func fetchContent(id: String) throws -> Data? {
+        try db.read { db in
+            try Data.fetchOne(db, sql: "SELECT content FROM items WHERE id = ?", arguments: [id])
+        }
+    }
+
     func togglePin(id: String) throws {
         try db.write { db in
-            if var item = try ClipboardItem.fetchOne(db, key: id) {
-                item.isPinned.toggle()
-                try item.update(db)
-            }
-        }
-    }
-
-    func exists(type: ClipboardItemType, content: Data) throws -> Bool {
-        try db.read { db in
-            try ClipboardItem
-                .filter(Column("type") == type.rawValue && Column("content") == content)
-                .fetchCount(db) > 0
-        }
-    }
-
-    func deleteExisting(type: ClipboardItemType, content: Data) throws {
-        try db.write { db in
-            try ClipboardItem
-                .filter(Column("type") == type.rawValue && Column("content") == content)
-                .deleteAll(db)
+            try db.execute(sql: "UPDATE items SET isPinned = NOT isPinned WHERE id = ?", arguments: [id])
         }
     }
 
     func totalSizeBytes() throws -> Int64 {
         try db.read { db in
             try Int64.fetchOne(db, sql: "SELECT COALESCE(SUM(sizeBytes), 0) FROM items") ?? 0
-        }
-    }
-
-    func fetchLatest() throws -> ClipboardItem? {
-        try db.read { db in
-            try ClipboardItem.order(Column("createdAt").desc).fetchOne(db)
         }
     }
 
@@ -101,16 +111,19 @@ class ClipboardStore {
                 db, sql: "SELECT COALESCE(SUM(sizeBytes), 0) FROM items"
             ) ?? 0
             guard totalSize > sizeLimitBytes else { return }
-            let excess = totalSize - sizeLimitBytes
-            var freed: Int64 = 0
-            let oldest = try ClipboardItem
-                .filter(Column("isPinned") == false)
-                .order(Column("createdAt").asc)
-                .fetchAll(db)
-            for item in oldest {
-                try ClipboardItem.deleteOne(db, key: item.id)
-                freed += Int64(item.sizeBytes)
-                if freed >= excess { break }
+            var excess = totalSize - sizeLimitBytes
+
+            // Stream id+sizeBytes only (no content blobs) and stop as soon as
+            // enough space is freed, instead of loading every non-pinned
+            // record (content included) into memory up front.
+            let rows = try Row.fetchCursor(
+                db, sql: "SELECT id, sizeBytes FROM items WHERE isPinned = 0 ORDER BY createdAt ASC"
+            )
+            while excess > 0, let row = try rows.next() {
+                let id: String = row["id"]
+                let size: Int64 = row["sizeBytes"]
+                try db.execute(sql: "DELETE FROM items WHERE id = ?", arguments: [id])
+                excess -= size
             }
         }
     }

@@ -8,8 +8,7 @@ class NotchPanelController {
     private let store: ClipboardStore
     private let shortcutsViewModel: ShortcutsViewModel
     private var viewModel: PanelViewModel?
-    private var outsideClickMonitor: Any?
-    private var escKeyMonitor: Any?
+    private let dismissMonitor = PanelDismissMonitor()
     private var previousApp: NSRunningApplication?
 
     var onShowSettings: (() -> Void)?
@@ -79,37 +78,11 @@ class NotchPanelController {
         NSApp.activate(ignoringOtherApps: true)
         window?.animateExpand()
 
-        // dismiss on outside click
-        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) {
-            [weak self] event in
-            guard let self, let w = self.window else { return }
-            // Don't hide if a modal (e.g. NSOpenPanel) is active
-            guard NSApp.modalWindow == nil else { return }
-            let screenLoc = NSEvent.mouseLocation
-            if !NSMouseInRect(screenLoc, w.frame, false) {
-                self.hide()
-            }
-        }
-
-        // ESC key
-        escKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.keyCode == 53 { // ESC
-                self?.hide()
-                return nil
-            }
-            return event
-        }
+        dismissMonitor.start(frame: { [weak self] in self?.window?.frame }, onDismiss: { [weak self] in self?.hide() })
     }
 
     func hide() {
-        if let monitor = outsideClickMonitor {
-            NSEvent.removeMonitor(monitor)
-            outsideClickMonitor = nil
-        }
-        if let monitor = escKeyMonitor {
-            NSEvent.removeMonitor(monitor)
-            escKeyMonitor = nil
-        }
+        dismissMonitor.stop()
         window?.animateCollapse { [weak self] in
             self?.window?.orderOut(nil)
             self?.window = nil
@@ -118,26 +91,9 @@ class NotchPanelController {
         }
     }
 
-    private func handleSelect(item: ClipboardItem, paste: Bool) {
-        // copy to clipboard
-        let pb = NSPasteboard.general
-        pb.clearContents()
-        switch item.type {
-        case .text:
-            if let str = String(data: item.content, encoding: .utf8) {
-                pb.setString(str, forType: .string)
-            }
-        case .image:
-            pb.setData(item.content, forType: NSPasteboard.PasteboardType("public.png"))
-        case .file:
-            if let str = String(data: item.content, encoding: .utf8),
-               let url = URL(string: str) {
-                pb.writeObjects([url as NSURL])
-            }
-        }
-
+    private func handleSelect(item: ClipboardItemSummary, paste: Bool) {
+        ClipboardPasteboardWriter.write(item, store: store)
         hide()
-
         if paste {
             simulatePaste(into: previousApp)
         }

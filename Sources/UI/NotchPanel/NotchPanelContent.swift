@@ -11,12 +11,12 @@ enum PanelTab {
 // MARK: - PanelViewModel
 
 class PanelViewModel: ObservableObject {
-    @Published var items: [ClipboardItem] = []
+    @Published var items: [ClipboardItemSummary] = []
     let store: ClipboardStore
 
     init(store: ClipboardStore) { self.store = store }
 
-    func reload() { items = (try? store.fetchAll()) ?? [] }
+    func reload() { items = (try? store.fetchAllSummaries()) ?? [] }
 }
 
 // MARK: - NotchPanelContent
@@ -24,8 +24,8 @@ class PanelViewModel: ObservableObject {
 struct NotchPanelContent: View {
     @ObservedObject var viewModel: PanelViewModel
     @ObservedObject var shortcutsViewModel: ShortcutsViewModel
-    let onSelect: (ClipboardItem, Bool) -> Void
-    let onPin: (ClipboardItem) -> Void
+    let onSelect: (ClipboardItemSummary, Bool) -> Void
+    let onPin: (ClipboardItemSummary) -> Void
     let onSettings: () -> Void
     let onRunShortcut: (ShortcutItem) -> Void
     var isFloating: Bool = false
@@ -36,10 +36,12 @@ struct NotchPanelContent: View {
     @State private var activeTab: PanelTab = .clipboard
     @State private var searchFocused: Bool = false
 
-    private let searcher = FuzzySearcher()
+    // Shared across all instances (Fuse itself is stateless config) instead
+    // of re-constructed every time this View struct is re-created by SwiftUI.
+    private static let searcher = FuzzySearcher()
 
-    private var displayedItems: [ClipboardItem] {
-        searcher.search(query: searchQuery, in: viewModel.items)
+    private var displayedItems: [ClipboardItemSummary] {
+        Self.searcher.search(query: searchQuery, in: viewModel.items)
     }
 
     private var notchHeight: CGFloat { NSScreen.main?.safeAreaInsets.top ?? 26 }

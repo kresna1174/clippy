@@ -2,12 +2,16 @@
 import SwiftUI
 
 struct ClipboardItemRow: View {
-    let item: ClipboardItem
+    let item: ClipboardItemSummary
     let isSelected: Bool
-    let onSelect: (ClipboardItem, Bool) -> Void
-    let onPin: (ClipboardItem) -> Void
+    let onSelect: (ClipboardItemSummary, Bool) -> Void
+    let onPin: (ClipboardItemSummary) -> Void
 
     @State private var isHovered = false
+    // Decoded once per item (from the small stored thumbnail, not the full
+    // image) and cached here instead of re-decoding on every body
+    // evaluation (e.g. every hover toggle).
+    @State private var thumbImage: NSImage?
 
     var body: some View {
         HStack(spacing: 8) {
@@ -50,6 +54,13 @@ struct ClipboardItemRow: View {
             let isCmd = NSEvent.modifierFlags.contains(.command)
             onSelect(item, isCmd)
         }
+        .onAppear(perform: decodeThumbnailIfNeeded)
+        .onChange(of: item.thumbnail) { _ in decodeThumbnailIfNeeded() }
+    }
+
+    private func decodeThumbnailIfNeeded() {
+        guard item.type == .image, thumbImage == nil, let data = item.thumbnail else { return }
+        thumbImage = NSImage(data: data)
     }
 
     @ViewBuilder
@@ -58,7 +69,7 @@ struct ClipboardItemRow: View {
         case .text:
             Image(systemName: "doc.text").foregroundColor(.blue)
         case .image:
-            if let img = NSImage(data: item.content) {
+            if let img = thumbImage {
                 Image(nsImage: img).resizable().scaledToFill()
                     .frame(width: 20, height: 20).clipped().clipShape(RoundedRectangle(cornerRadius: 3))
             } else {

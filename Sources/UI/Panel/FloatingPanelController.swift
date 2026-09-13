@@ -5,8 +5,7 @@ import SwiftUI
 class FloatingPanelController {
     private var window: FloatingPanelWindow?
     private var viewModel: PanelViewModel?
-    private var outsideClickMonitor: Any?
-    private var escKeyMonitor: Any?
+    private let dismissMonitor = PanelDismissMonitor()
     private var previousApp: NSRunningApplication?
     private let store: ClipboardStore
     private let shortcutsViewModel: ShortcutsViewModel
@@ -62,22 +61,11 @@ class FloatingPanelController {
         NSApp.activate(ignoringOtherApps: true)
         isVisible = true
 
-        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { [weak self] _ in
-            guard let self, let w = self.window else { return }
-            // Don't hide if a modal (e.g. NSOpenPanel) is active
-            guard NSApp.modalWindow == nil else { return }
-            if !NSMouseInRect(NSEvent.mouseLocation, w.frame, false) { self.hide() }
-        }
-
-        escKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.keyCode == 53 { self?.hide(); return nil }
-            return event
-        }
+        dismissMonitor.start(frame: { [weak self] in self?.window?.frame }, onDismiss: { [weak self] in self?.hide() })
     }
 
     func hide() {
-        if let m = outsideClickMonitor { NSEvent.removeMonitor(m); outsideClickMonitor = nil }
-        if let m = escKeyMonitor { NSEvent.removeMonitor(m); escKeyMonitor = nil }
+        dismissMonitor.stop()
         window?.orderOut(nil)
         window = nil
         viewModel = nil
@@ -86,19 +74,8 @@ class FloatingPanelController {
 
     // MARK: - Private
 
-    private func handleSelect(item: ClipboardItem, paste: Bool) {
-        let pb = NSPasteboard.general
-        pb.clearContents()
-        switch item.type {
-        case .text:
-            if let str = String(data: item.content, encoding: .utf8) { pb.setString(str, forType: .string) }
-        case .image:
-            pb.setData(item.content, forType: NSPasteboard.PasteboardType("public.png"))
-        case .file:
-            if let str = String(data: item.content, encoding: .utf8), let url = URL(string: str) {
-                pb.writeObjects([url as NSURL])
-            }
-        }
+    private func handleSelect(item: ClipboardItemSummary, paste: Bool) {
+        ClipboardPasteboardWriter.write(item, store: store)
         hide()
         if paste {
             simulatePaste(into: previousApp)
