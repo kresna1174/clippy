@@ -63,6 +63,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menuBar.start { [weak self] in
             DispatchQueue.main.async { self?.coordinator.toggle() }
         }
+        menuBar.onAwakeIconClicked = { [weak self] in
+            self?.prefs.preventSleep = false
+        }
+        PowerAssertionManager.shared.onStateChange = { [weak self] active in
+            DispatchQueue.main.async { self?.menuBar.setAwakeIndicator(active: active) }
+        }
+        // Sync initial icon state in case preventSleep was already on at launch
+        // (AppPreferences starts the assertion before menuBar exists).
+        menuBar.setAwakeIndicator(active: PowerAssertionManager.shared.isActive)
     }
 
     private func showSettings() {
