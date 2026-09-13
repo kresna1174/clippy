@@ -3,7 +3,7 @@ import Fuse
 class FuzzySearcher {
     private let fuse = Fuse()
 
-    func search(query: String, in items: [ClipboardItem]) -> [ClipboardItem] {
+    func search(query: String, in items: [ClipboardItemSummary]) -> [ClipboardItemSummary] {
         guard !query.isEmpty else { return items }
         let results = fuse.search(query, in: items.map { $0.preview })
         return results

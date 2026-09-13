@@ -96,6 +96,10 @@ struct SettingsView: View {
                     else { try? SMAppService.mainApp.unregister() }
                 }
 
+            Toggle("Keep Mac awake while running", isOn: $prefs.preventSleep)
+                .foregroundColor(.white)
+                .font(.system(size: 12))
+
             HStack {
                 Text("Hotkey: ⌘⇧V (non-configurable in v1)")
                     .foregroundColor(.gray)
