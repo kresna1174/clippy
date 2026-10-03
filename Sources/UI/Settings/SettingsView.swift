@@ -57,6 +57,31 @@ struct SettingsView: View {
 
             Divider().background(Color.gray.opacity(0.3))
 
+            // History Limit
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("History record limit:")
+                        .foregroundColor(.white)
+                        .font(.system(size: 12))
+                    Spacer()
+                    Text("\(prefs.historyLimit) items (pinned kept)")
+                        .foregroundColor(.gray)
+                        .font(.system(size: 11))
+                }
+                Picker("", selection: $prefs.historyLimit) {
+                    Text("25 items").tag(25)
+                    Text("50 items").tag(50)
+                    Text("100 items").tag(100)
+                    Text("200 items").tag(200)
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: prefs.historyLimit) { newLimit in
+                    store.maxItems = newLimit
+                }
+            }
+
+            Divider().background(Color.gray.opacity(0.3))
+
             // Storage
             VStack(alignment: .leading, spacing: 6) {
                 HStack {

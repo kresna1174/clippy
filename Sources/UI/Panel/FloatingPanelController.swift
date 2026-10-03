@@ -46,6 +46,21 @@ class FloatingPanelController {
                 try? self.store.togglePin(id: item.id)
                 self.viewModel?.reload()
             },
+            onDelete: { [weak self] item in
+                guard let self else { return }
+                try? self.store.delete(id: item.id)
+                self.viewModel?.reload()
+            },
+            onClearUnpinned: { [weak self] in
+                guard let self else { return }
+                try? self.store.clearUnpinned()
+                self.viewModel?.reload()
+            },
+            onClearAll: { [weak self] in
+                guard let self else { return }
+                try? self.store.clearAll()
+                self.viewModel?.reload()
+            },
             onSettings: { [weak self] in
                 self?.onShowSettings?()
             },

@@ -27,9 +27,16 @@ class AppPreferences: ObservableObject {
         }
     }
 
+    @Published var historyLimit: Int {
+        didSet { UserDefaults.standard.set(historyLimit, forKey: "historyLimit") }
+    }
+
     private init() {
         let raw = UserDefaults.standard.string(forKey: "panelMode") ?? ""
         panelMode = PanelMode(rawValue: raw) ?? .notch
+
+        let storedLimit = UserDefaults.standard.integer(forKey: "historyLimit")
+        historyLimit = storedLimit > 0 ? storedLimit : 50
 
         preventSleep = UserDefaults.standard.bool(forKey: "preventSleep")
         if preventSleep {

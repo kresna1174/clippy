@@ -26,6 +26,9 @@ struct NotchPanelContent: View {
     @ObservedObject var shortcutsViewModel: ShortcutsViewModel
     let onSelect: (ClipboardItemSummary, Bool) -> Void
     let onPin: (ClipboardItemSummary) -> Void
+    let onDelete: (ClipboardItemSummary) -> Void
+    let onClearUnpinned: () -> Void
+    let onClearAll: () -> Void
     let onSettings: () -> Void
     let onRunShortcut: (ShortcutItem) -> Void
     var isFloating: Bool = false
@@ -35,6 +38,7 @@ struct NotchPanelContent: View {
     @State private var selectedIndex: Int? = nil
     @State private var activeTab: PanelTab = .clipboard
     @State private var searchFocused: Bool = false
+    @State private var showClearConfirm = false
 
     // Shared across all instances (Fuse itself is stateless config) instead
     // of re-constructed every time this View struct is re-created by SwiftUI.
@@ -42,6 +46,11 @@ struct NotchPanelContent: View {
 
     private var displayedItems: [ClipboardItemSummary] {
         Self.searcher.search(query: searchQuery, in: viewModel.items)
+    }
+
+    private var effectiveSelectedIndex: Int? {
+        if let selectedIndex { return selectedIndex }
+        return searchQuery.isEmpty ? nil : (displayedItems.isEmpty ? nil : 0)
     }
 
     private var notchHeight: CGFloat { NSScreen.main?.safeAreaInsets.top ?? 26 }
@@ -70,6 +79,17 @@ struct NotchPanelContent: View {
 
                         Spacer()
 
+                        if activeTab == .clipboard && !viewModel.items.isEmpty {
+                            // Clear history button
+                            Button(action: { showClearConfirm = true }) {
+                                Image(systemName: "trash")
+                                    .foregroundColor(.secondary)
+                                    .font(.system(size: 12))
+                            }
+                            .buttonStyle(.plain)
+                            .help("Clear history")
+                        }
+
                         // Settings gear
                         Button(action: onSettings) {
                             Image(systemName: "gear")
@@ -77,6 +97,7 @@ struct NotchPanelContent: View {
                                 .font(.system(size: 13))
                         }
                         .buttonStyle(.plain)
+                        .help("Settings")
                     }
                     .padding(.horizontal, 12)
                     .padding(.top, 10)
@@ -159,6 +180,17 @@ struct NotchPanelContent: View {
             selectedIndex = nil
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { searchFocused = true }
         }
+        .confirmationDialog("Clear clipboard history?", isPresented: $showClearConfirm) {
+            Button("Clear All Unpinned", role: .destructive) {
+                onClearUnpinned()
+            }
+            Button("Clear All (Including Pinned)", role: .destructive) {
+                onClearAll()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Select an option to clear clipboard history:")
+        }
     }
 
     // MARK: - Tab Button
@@ -194,19 +226,15 @@ struct NotchPanelContent: View {
                     ForEach(Array(displayedItems.enumerated()), id: \.element.id) { idx, item in
                         ClipboardItemRow(
                             item: item,
-                            isSelected: selectedIndex == idx,
+                            isSelected: effectiveSelectedIndex == idx,
                             onSelect: onSelect,
-                            onPin: onPin
+                            onPin: onPin,
+                            onDelete: onDelete
                         )
                         .id(idx)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .top).combined(with: .opacity),
-                            removal: .opacity
-                        ))
                         Divider().opacity(0.25)
                     }
                 }
-                .animation(.spring(response: 0.35, dampingFraction: 0.8), value: displayedItems.map(\.id))
             }
             .onChange(of: selectedIndex) { idx in
                 if let idx { withAnimation { proxy.scrollTo(idx, anchor: .center) } }
@@ -242,12 +270,16 @@ struct NotchPanelContent: View {
         switch dir {
         case .down:
             guard count > 0 else { return }
-            selectedIndex = min((selectedIndex ?? -1) + 1, count - 1)
+            let current = selectedIndex ?? (searchQuery.isEmpty ? -1 : 0)
+            selectedIndex = min(current + 1, count - 1)
         case .up:
-            let next = (selectedIndex ?? count) - 1
+            guard count > 0 else { return }
+            let current = selectedIndex ?? (searchQuery.isEmpty ? 0 : 0)
+            let next = current - 1
             selectedIndex = next < 0 ? nil : next
         case .confirm:
-            guard let idx = selectedIndex, idx < count else { return }
+            let idx = effectiveSelectedIndex ?? 0
+            guard idx < count else { return }
             onSelect(displayedItems[idx], true)
         }
     }
@@ -262,16 +294,19 @@ struct NotchPanelContent: View {
         case .downArrow:
             guard count > 0 else { return .handled }
             searchFocused = false
-            selectedIndex = min((selectedIndex ?? -1) + 1, count - 1)
+            let current = selectedIndex ?? (searchQuery.isEmpty ? -1 : 0)
+            selectedIndex = min(current + 1, count - 1)
             return .handled
         case .upArrow:
             searchFocused = false
-            let next = (selectedIndex ?? count) - 1
+            let current = selectedIndex ?? (searchQuery.isEmpty ? 0 : 0)
+            let next = current - 1
             if next < 0 { selectedIndex = nil; searchFocused = true }
             else { selectedIndex = next }
             return .handled
         case .return:
-            guard let idx = selectedIndex, idx < count else { return .ignored }
+            let idx = effectiveSelectedIndex ?? 0
+            guard idx < count else { return .ignored }
             let item = displayedItems[idx]
             let paste = !press.modifiers.contains(.command)
             onSelect(item, paste)
@@ -279,6 +314,13 @@ struct NotchPanelContent: View {
         case .tab:
             searchFocused.toggle()
             return .handled
+        case .delete, .deleteForward:
+            if !searchFocused, let idx = effectiveSelectedIndex, idx < count {
+                let item = displayedItems[idx]
+                onDelete(item)
+                return .handled
+            }
+            return .ignored
         default:
             // Printable char while list is focused → redirect to search
             if !searchFocused && !press.characters.isEmpty &&

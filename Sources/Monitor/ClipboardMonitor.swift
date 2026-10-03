@@ -49,7 +49,7 @@ class ClipboardMonitor {
     private func parseItem(from pb: NSPasteboard) -> ClipboardItem? {
         // text
         if let string = pb.string(forType: .string), !string.isEmpty {
-            let preview = String(string.prefix(200))
+            let preview = String(string.prefix(1000))
             return ClipboardItem(type: .text, content: Data(string.utf8), preview: preview)
         }
         // file URL

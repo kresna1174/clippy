@@ -6,6 +6,7 @@ struct ClipboardItemRow: View {
     let isSelected: Bool
     let onSelect: (ClipboardItemSummary, Bool) -> Void
     let onPin: (ClipboardItemSummary) -> Void
+    let onDelete: (ClipboardItemSummary) -> Void
 
     @State private var isHovered = false
     // Decoded once per item (from the small stored thumbnail, not the full
@@ -29,14 +30,28 @@ struct ClipboardItemRow: View {
             }
             Spacer()
 
-            if item.isPinned || isHovered {
-                Button(action: { onPin(item) }) {
-                    Image(systemName: item.isPinned ? "pin.fill" : "pin")
-                        .font(.system(size: 11))
-                        .foregroundColor(item.isPinned ? .yellow : .secondary)
+            HStack(spacing: 6) {
+                if item.isPinned || isHovered {
+                    Button(action: { onPin(item) }) {
+                        Image(systemName: item.isPinned ? "pin.fill" : "pin")
+                            .font(.system(size: 11))
+                            .foregroundColor(item.isPinned ? .yellow : .secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help(item.isPinned ? "Unpin item" : "Pin item")
+                    .transition(.opacity)
                 }
-                .buttonStyle(.plain)
-                .transition(.opacity)
+
+                if isHovered {
+                    Button(action: { onDelete(item) }) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Delete from history")
+                    .transition(.opacity)
+                }
             }
         }
         .padding(.horizontal, 12)
@@ -53,6 +68,21 @@ struct ClipboardItemRow: View {
         .onTapGesture {
             let isCmd = NSEvent.modifierFlags.contains(.command)
             onSelect(item, isCmd)
+        }
+        .contextMenu {
+            Button("Paste") {
+                onSelect(item, true)
+            }
+            Button("Copy to Clipboard") {
+                onSelect(item, false)
+            }
+            Button(item.isPinned ? "Unpin" : "Pin") {
+                onPin(item)
+            }
+            Divider()
+            Button("Delete", role: .destructive) {
+                onDelete(item)
+            }
         }
         .onAppear(perform: decodeThumbnailIfNeeded)
         .onChange(of: item.thumbnail) { _ in decodeThumbnailIfNeeded() }

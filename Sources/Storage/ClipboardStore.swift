@@ -4,8 +4,11 @@ import GRDB
 class ClipboardStore {
     let db: DatabaseQueue
     private let sizeLimitBytes: Int64
+    var maxItems: Int {
+        didSet { try? pruneIfNeeded() }
+    }
 
-    init(sizeLimitBytes: Int64 = 500_000_000) throws {
+    init(maxItems: Int = 50, sizeLimitBytes: Int64 = 500_000_000) throws {
         let appSupport = FileManager.default.urls(
             for: .applicationSupportDirectory, in: .userDomainMask
         ).first!
@@ -13,8 +16,10 @@ class ClipboardStore {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let dbURL = dir.appendingPathComponent("history.db")
         db = try DatabaseQueue(path: dbURL.path)
+        self.maxItems = maxItems
         self.sizeLimitBytes = sizeLimitBytes
         try migrate()
+        try pruneIfNeeded()
     }
 
     private func migrate() throws {
@@ -98,15 +103,39 @@ class ClipboardStore {
     }
 
     func delete(id: String) throws {
-        try db.write { db in try ClipboardItem.deleteOne(db, key: id) }
+        _ = try db.write { db in try ClipboardItem.deleteOne(db, key: id) }
+    }
+
+    func clearUnpinned() throws {
+        _ = try db.write { db in
+            try db.execute(sql: "DELETE FROM items WHERE isPinned = 0")
+        }
     }
 
     func clearAll() throws {
-        try db.write { db in try ClipboardItem.deleteAll(db) }
+        _ = try db.write { db in try ClipboardItem.deleteAll(db) }
     }
 
     private func pruneIfNeeded() throws {
         try db.write { db in
+            // 1. Prune by item count limit: keep newest maxItems unpinned items, preserve all pinned items
+            if self.maxItems > 0 {
+                try db.execute(
+                    sql: """
+                    DELETE FROM items 
+                    WHERE isPinned = 0 
+                      AND id NOT IN (
+                          SELECT id FROM items 
+                          WHERE isPinned = 0 
+                          ORDER BY createdAt DESC 
+                          LIMIT ?
+                      )
+                    """,
+                    arguments: [self.maxItems]
+                )
+            }
+
+            // 2. Prune by size limit if still exceeding
             let totalSize = try Int64.fetchOne(
                 db, sql: "SELECT COALESCE(SUM(sizeBytes), 0) FROM items"
             ) ?? 0

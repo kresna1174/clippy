@@ -27,7 +27,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
 
         do {
-            store = try ClipboardStore(sizeLimitBytes: Int64(sizeLimitMB * 1_000_000))
+            store = try ClipboardStore(
+                maxItems: prefs.historyLimit,
+                sizeLimitBytes: Int64(sizeLimitMB * 1_000_000)
+            )
             shortcutStore = try ShortcutStore(db: store.db)
         } catch {
             fatalError("Cannot open database: \(error)")
