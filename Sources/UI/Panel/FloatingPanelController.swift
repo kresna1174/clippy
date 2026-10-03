@@ -19,11 +19,16 @@ class FloatingPanelController {
     }
 
     func toggle() {
-        isVisible ? hide() : show()
+        if isVisible, let w = window, w.isKeyWindow {
+            hide()
+        } else {
+            show()
+        }
     }
 
     func show() {
-        guard !isVisible else { return }
+        if isVisible && window?.isKeyWindow == true { return }
+        if isVisible { hide() }
         previousApp = NSWorkspace.shared.frontmostApplication
 
         let origin = resolvePopupOrigin()
@@ -76,7 +81,11 @@ class FloatingPanelController {
         NSApp.activate(ignoringOtherApps: true)
         isVisible = true
 
-        dismissMonitor.start(frame: { [weak self] in self?.window?.frame }, onDismiss: { [weak self] in self?.hide() })
+        dismissMonitor.start(
+            window: w,
+            frame: { [weak self] in self?.window?.frame },
+            onDismiss: { [weak self] in self?.hide() }
+        )
     }
 
     func hide() {

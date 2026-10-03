@@ -34,10 +34,35 @@ class ShortcutsViewModel: ObservableObject {
 
 // MARK: - Window Holder Helper
 
-struct ShortcutFormWindowHolder {
-    static var window: NSWindow?
+final class ShortcutFormWindowHolder: NSObject, NSWindowDelegate {
+    static let shared = ShortcutFormWindowHolder()
+    private var window: NSWindow?
+
+    static var isOpen: Bool {
+        shared.window != nil
+    }
+
+    static func show(window: NSWindow) {
+        close()
+        window.delegate = shared
+        window.isReleasedWhenClosed = false
+        shared.window = window
+        window.center()
+        window.level = .floating
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     static func close() {
-        window?.close()
+        guard let w = shared.window else { return }
+        shared.window = nil
+        w.delegate = nil
+        w.orderOut(nil)
+        w.close()
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        window?.delegate = nil
         window = nil
     }
 }
@@ -163,11 +188,7 @@ struct ShortcutsPanel: View {
         )
         w.title = item == nil ? "Add Shortcut" : "Edit Shortcut"
         w.contentView = NSHostingView(rootView: view)
-        w.center()
-        w.level = .floating
-        w.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-        ShortcutFormWindowHolder.window = w
+        ShortcutFormWindowHolder.show(window: w)
     }
 
     // MARK: - Actions

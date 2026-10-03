@@ -44,6 +44,8 @@ cat > "$LAUNCH_AGENT" << EOF
 EOF
 
 launchctl unload "$LAUNCH_AGENT" 2>/dev/null || true
+pkill -9 "${APP_NAME}" 2>/dev/null || true
+sleep 0.5
 launchctl load "$LAUNCH_AGENT"
 
 echo ""

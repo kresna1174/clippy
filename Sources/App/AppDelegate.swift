@@ -22,7 +22,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSRunningApplication
             .runningApplications(withBundleIdentifier: "com.clippy.app")
             .filter { $0 != NSRunningApplication.current }
-            .forEach { $0.terminate() }
+            .forEach {
+                $0.terminate()
+                $0.forceTerminate()
+            }
 
         NSApp.setActivationPolicy(.accessory)
 
@@ -96,6 +99,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 backing: .buffered,
                 defer: false
             )
+            w.isReleasedWhenClosed = false
             w.title = "Clippy Settings"
             w.contentView = NSHostingView(rootView: view)
             w.center()

@@ -26,7 +26,7 @@ class NotchPanelController {
     }
 
     func toggle() {
-        if let w = window, w.isExpanded {
+        if let w = window, w.isExpanded, w.isKeyWindow {
             hide()
         } else {
             show()
@@ -93,7 +93,11 @@ class NotchPanelController {
         NSApp.activate(ignoringOtherApps: true)
         window?.animateExpand()
 
-        dismissMonitor.start(frame: { [weak self] in self?.window?.frame }, onDismiss: { [weak self] in self?.hide() })
+        dismissMonitor.start(
+            window: window,
+            frame: { [weak self] in self?.window?.frame },
+            onDismiss: { [weak self] in self?.hide() }
+        )
     }
 
     func hide() {

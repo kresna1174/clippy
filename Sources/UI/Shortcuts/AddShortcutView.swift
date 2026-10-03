@@ -151,9 +151,13 @@ struct AddShortcutView: View {
 
                 // ── Footer buttons ──
                 HStack {
-                    Button("Cancel", action: onCancel)
+                    Button("Cancel") {
+                        stopRecording()
+                        onCancel()
+                    }
                     Spacer()
                     Button(isEditing ? "Save" : "Add") {
+                        stopRecording()
                         onSave(item)
                     }
                     .disabled(item.name.trimmingCharacters(in: .whitespaces).isEmpty ||
@@ -164,6 +168,9 @@ struct AddShortcutView: View {
             .padding(20)
         }
         .frame(width: 360, height: item.actionType == .workflow ? 430 : (needsPayload ? 370 : 310))
+        .onDisappear {
+            stopRecording()
+        }
     }
 
     // MARK: - Helpers
@@ -226,6 +233,10 @@ struct AddShortcutView: View {
         stopRecording()
         isRecordingHotkey = true
         hotkeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            if event.keyCode == 53 { // ESC cancels recording
+                self.stopRecording()
+                return nil
+            }
             let relevant = event.modifierFlags.intersection([.command, .shift, .option, .control])
             let isModifierOnly = (54...63).contains(Int(event.keyCode))
             if !relevant.isEmpty && !isModifierOnly {
