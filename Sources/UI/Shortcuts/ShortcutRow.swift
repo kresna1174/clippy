@@ -16,6 +16,7 @@ struct ShortcutRow: View {
         case .openURL:         return .green
         case .openFile:        return .orange
         case .shell:           return .purple
+        case .workflow:        return .indigo
         case .systemLock:      return .red
         case .systemEmptyTrash: return .gray
         }

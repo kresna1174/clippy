@@ -11,6 +11,7 @@ struct AddShortcutView: View {
     /// Printable key character captured during hotkey recording.
     @State private var hotkeyKeyChar: String = ""
     @State private var isRecordingHotkey = false
+    @State private var hotkeyMonitor: Any? = nil
 
     // MARK: - Init
 
@@ -69,7 +70,27 @@ struct AddShortcutView: View {
                 }
 
                 // ── Payload (context-sensitive) ──
-                if needsPayload {
+                if item.actionType == .workflow {
+                    formSection(label: "Workflow Steps (Apps, URLs, or Commands)") {
+                        VStack(alignment: .leading, spacing: 6) {
+                            TextEditor(text: $item.actionPayload)
+                                .font(.system(size: 11, design: .monospaced))
+                                .frame(height: 75)
+                                .padding(4)
+                                .background(Color.white.opacity(0.06))
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.secondary.opacity(0.2), lineWidth: 1))
+                            HStack {
+                                Button("+ Add App…") { pickApp() }
+                                    .controlSize(.small)
+                                Spacer()
+                                Text("One per line (e.g. OrbStack, Zed)")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                } else if needsPayload {
                     formSection(label: payloadLabel) {
                         HStack {
                             TextField(payloadPlaceholder, text: $item.actionPayload)
@@ -137,7 +158,7 @@ struct AddShortcutView: View {
             }
             .padding(20)
         }
-        .frame(width: 340, height: 360)
+        .frame(width: 360, height: item.actionType == .workflow ? 430 : 370)
     }
 
     // MARK: - Helpers
@@ -158,6 +179,7 @@ struct AddShortcutView: View {
         case .openURL:  return "URL"
         case .openFile: return "File / Folder Path"
         case .shell:    return "Shell Command"
+        case .workflow: return "Workflow Steps"
         case .systemLock, .systemEmptyTrash: return ""
         }
     }
@@ -168,6 +190,7 @@ struct AddShortcutView: View {
         case .openURL:  return "https://github.com"
         case .openFile: return "~/Documents/Projects"
         case .shell:    return "git -C ~/Projects pull"
+        case .workflow: return "OrbStack\nZed\nDBeaver\nBrave Browser"
         case .systemLock, .systemEmptyTrash: return ""
         }
     }
@@ -195,19 +218,30 @@ struct AddShortcutView: View {
     // MARK: - Hotkey recording
 
     private func startRecording() {
+        stopRecording()
         isRecordingHotkey = true
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+        hotkeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let relevant = event.modifierFlags.intersection([.command, .shift, .option, .control])
-            // Require at least one modifier to avoid capturing bare letter presses
-            if !relevant.isEmpty && event.keyCode != 0 {
+            let isModifierOnly = (54...63).contains(Int(event.keyCode))
+            if !relevant.isEmpty && !isModifierOnly {
                 self.item.hotkeyKeyCode = Int(event.keyCode)
                 self.item.hotkeyModifiers = Int(relevant.rawValue)
-                let keyChar = event.charactersIgnoringModifiers?.uppercased() ?? ""
-                self.hotkeyKeyChar = keyChar
-                self.item.hotkeyKeyChar = keyChar
-                self.isRecordingHotkey = false
+                let char = event.charactersIgnoringModifiers ?? ""
+                let display = char.isEmpty ? "\(event.keyCode)" : char.uppercased()
+                self.hotkeyKeyChar = display
+                self.item.hotkeyKeyChar = display
+                self.stopRecording()
+                return nil
             }
-            return nil // consume the event while recording
+            return nil
+        }
+    }
+
+    private func stopRecording() {
+        isRecordingHotkey = false
+        if let m = hotkeyMonitor {
+            NSEvent.removeMonitor(m)
+            hotkeyMonitor = nil
         }
     }
 
@@ -220,13 +254,23 @@ struct AddShortcutView: View {
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         if panel.runModal() == .OK, let url = panel.url {
-            if let bundle = Bundle(url: url), let bundleID = bundle.bundleIdentifier {
-                item.actionPayload = bundleID
+            let appName = url.deletingPathExtension().lastPathComponent
+            if item.actionType == .workflow {
+                let trimmed = item.actionPayload.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty {
+                    item.actionPayload = appName
+                } else {
+                    item.actionPayload = trimmed + "\n" + appName
+                }
             } else {
-                item.actionPayload = url.path
+                if let bundle = Bundle(url: url), let bundleID = bundle.bundleIdentifier {
+                    item.actionPayload = bundleID
+                } else {
+                    item.actionPayload = url.path
+                }
             }
             if item.name.trimmingCharacters(in: .whitespaces).isEmpty {
-                item.name = url.deletingPathExtension().lastPathComponent
+                item.name = appName
             }
         }
     }

@@ -7,6 +7,7 @@ enum ActionType: String, CaseIterable, Codable {
     case openURL
     case openFile
     case shell
+    case workflow
     case systemLock   // lock screen
     case systemEmptyTrash
 
@@ -16,6 +17,7 @@ enum ActionType: String, CaseIterable, Codable {
         case .openURL: return "Open URL"
         case .openFile: return "Open File / Folder"
         case .shell: return "Shell Command"
+        case .workflow: return "Workflow (Multi-App / Action)"
         case .systemLock: return "Lock Screen"
         case .systemEmptyTrash: return "Empty Trash"
         }
@@ -27,6 +29,7 @@ enum ActionType: String, CaseIterable, Codable {
         case .openURL: return "link"
         case .openFile: return "folder"
         case .shell: return "terminal"
+        case .workflow: return "square.stack.3d.up.fill"
         case .systemLock: return "lock.fill"
         case .systemEmptyTrash: return "trash"
         }
