@@ -12,13 +12,14 @@ struct ShortcutRow: View {
 
     private var iconColor: Color {
         switch item.actionType {
-        case .openApp:         return .blue
-        case .openURL:         return .green
-        case .openFile:        return .orange
-        case .shell:           return .purple
-        case .workflow:        return .indigo
-        case .systemLock:      return .red
-        case .systemEmptyTrash: return .gray
+        case .openApp:           return .blue
+        case .openURL:           return .green
+        case .openFile:          return .orange
+        case .shell:             return .purple
+        case .workflow:          return .indigo
+        case .systemCloseAllApps: return .red
+        case .systemLock:        return .red
+        case .systemEmptyTrash:  return .gray
         }
     }
 

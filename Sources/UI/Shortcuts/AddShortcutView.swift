@@ -67,6 +67,11 @@ struct AddShortcutView: View {
                     }
                     .pickerStyle(.menu)
                     .labelsHidden()
+                    .onChange(of: item.actionType) { newType in
+                        if !isEditing && (item.name.isEmpty || ActionType.allCases.map(\.displayName).contains(item.name)) {
+                            item.name = newType.displayName
+                        }
+                    }
                 }
 
                 // ── Payload (context-sensitive) ──
@@ -158,7 +163,7 @@ struct AddShortcutView: View {
             }
             .padding(20)
         }
-        .frame(width: 360, height: item.actionType == .workflow ? 430 : 370)
+        .frame(width: 360, height: item.actionType == .workflow ? 430 : (needsPayload ? 370 : 310))
     }
 
     // MARK: - Helpers
@@ -180,7 +185,7 @@ struct AddShortcutView: View {
         case .openFile: return "File / Folder Path"
         case .shell:    return "Shell Command"
         case .workflow: return "Workflow Steps"
-        case .systemLock, .systemEmptyTrash: return ""
+        case .systemLock, .systemEmptyTrash, .systemCloseAllApps: return ""
         }
     }
 
@@ -191,13 +196,13 @@ struct AddShortcutView: View {
         case .openFile: return "~/Documents/Projects"
         case .shell:    return "git -C ~/Projects pull"
         case .workflow: return "OrbStack\nZed\nDBeaver\nBrave Browser"
-        case .systemLock, .systemEmptyTrash: return ""
+        case .systemLock, .systemEmptyTrash, .systemCloseAllApps: return ""
         }
     }
 
     private var needsPayload: Bool {
         switch item.actionType {
-        case .systemLock, .systemEmptyTrash: return false
+        case .systemLock, .systemEmptyTrash, .systemCloseAllApps: return false
         default: return true
         }
     }

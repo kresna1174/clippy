@@ -26,6 +26,9 @@ class ShortcutRunner {
             return runShell(command: item.actionPayload)
         case .workflow:
             return runWorkflow(payload: item.actionPayload)
+        case .systemCloseAllApps:
+            closeAllApps()
+            return nil
         case .systemLock:
             lockScreen()
             return nil
@@ -47,7 +50,13 @@ class ShortcutRunner {
         var errors: [String] = []
 
         for line in lines {
-            if line.hasPrefix("http://") || line.hasPrefix("https://") {
+            let lower = line.lowercased()
+            if lower == "close all" || lower == "quit all" || lower == "close: all" || lower == "quit: all" {
+                closeAllApps()
+            } else if lower.hasPrefix("close ") || lower.hasPrefix("quit ") {
+                let target = String(line.dropFirst(lower.hasPrefix("close ") ? 6 : 5)).trimmingCharacters(in: .whitespaces)
+                closeApp(target: target)
+            } else if line.hasPrefix("http://") || line.hasPrefix("https://") {
                 if let err = openURL(string: line) { errors.append(err) }
             } else if line.hasPrefix("$ ") || line.hasPrefix("shell: ") {
                 let cmd = line.hasPrefix("$ ") ? String(line.dropFirst(2)) : String(line.dropFirst(7))
@@ -180,6 +189,41 @@ class ShortcutRunner {
         if let appleScript = NSAppleScript(source: script) {
             var error: NSDictionary?
             appleScript.executeAndReturnError(&error)
+        }
+    }
+
+    private func closeAllApps() {
+        let currentPID = ProcessInfo.processInfo.processIdentifier
+        let currentBundle = Bundle.main.bundleIdentifier ?? "com.clippy.app"
+        let ignoredBundleIDs: Set<String> = [
+            "com.apple.finder",
+            currentBundle
+        ]
+
+        for app in NSWorkspace.shared.runningApplications {
+            guard app.activationPolicy == .regular,
+                  app.processIdentifier != currentPID else {
+                continue
+            }
+            if let bundleID = app.bundleIdentifier, ignoredBundleIDs.contains(bundleID) {
+                continue
+            }
+            app.terminate()
+        }
+    }
+
+    private func closeApp(target: String) {
+        let trimmed = target.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let lower = trimmed.lowercased().replacingOccurrences(of: ".app", with: "")
+
+        for app in NSWorkspace.shared.runningApplications {
+            guard app.activationPolicy == .regular else { continue }
+            if let name = app.localizedName?.lowercased(), name == lower {
+                app.terminate()
+            } else if let bundleID = app.bundleIdentifier?.lowercased(), bundleID == lower {
+                app.terminate()
+            }
         }
     }
 }
