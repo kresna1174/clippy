@@ -76,6 +76,13 @@ struct ClipboardItemRow: View {
             Button("Copy to Clipboard") {
                 onSelect(item, false)
             }
+            if item.type == .image, let text = item.extractedText, !text.isEmpty {
+                Button("Copy Extracted Text") {
+                    let pb = NSPasteboard.general
+                    pb.clearContents()
+                    pb.setString(text, forType: .string)
+                }
+            }
             Button(item.isPinned ? "Unpin" : "Pin") {
                 onPin(item)
             }

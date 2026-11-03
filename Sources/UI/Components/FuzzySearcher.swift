@@ -20,7 +20,10 @@ class FuzzySearcher {
         var scored: [ScoredItem] = []
 
         for item in items {
-            let textLower = item.preview.lowercased()
+            var textLower = item.preview.lowercased()
+            if let extracted = item.extractedText?.lowercased(), !extracted.isEmpty {
+                textLower += " " + extracted
+            }
 
             // 1. Exact full match
             if textLower == qLower {

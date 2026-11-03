@@ -17,8 +17,9 @@ struct ClipboardItem: Codable, FetchableRecord, PersistableRecord {
     var createdAt: Int
     var sizeBytes: Int
     var isPinned: Bool
+    var extractedText: String?
 
-    init(type: ClipboardItemType, content: Data, preview: String, thumbnail: Data? = nil) {
+    init(type: ClipboardItemType, content: Data, preview: String, thumbnail: Data? = nil, extractedText: String? = nil) {
         self.id = UUID().uuidString
         self.type = type
         self.content = content
@@ -27,6 +28,7 @@ struct ClipboardItem: Codable, FetchableRecord, PersistableRecord {
         self.createdAt = Int(Date().timeIntervalSince1970)
         self.sizeBytes = content.count
         self.isPinned = false
+        self.extractedText = extractedText
     }
 }
 
@@ -41,7 +43,7 @@ struct ClipboardItemSummary: Codable, FetchableRecord, TableRecord, Identifiable
     // is deliberately left out so it's never read off disk for a list/search.
     static var databaseSelection: [any SQLSelectable] {
         [Column("id"), Column("type"), Column("preview"), Column("thumbnail"),
-         Column("createdAt"), Column("sizeBytes"), Column("isPinned")]
+         Column("createdAt"), Column("sizeBytes"), Column("isPinned"), Column("extractedText")]
     }
 
     var id: String
@@ -51,4 +53,5 @@ struct ClipboardItemSummary: Codable, FetchableRecord, TableRecord, Identifiable
     var createdAt: Int
     var sizeBytes: Int
     var isPinned: Bool
+    var extractedText: String?
 }

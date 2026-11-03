@@ -5,6 +5,7 @@ import SwiftUI
 
 enum PanelTab {
     case clipboard
+    case ocr
     case shortcuts
 }
 
@@ -25,6 +26,7 @@ struct NotchPanelContent: View {
     @ObservedObject var viewModel: PanelViewModel
     @ObservedObject var shortcutsViewModel: ShortcutsViewModel
     let onSelect: (ClipboardItemSummary, Bool) -> Void
+    var onSelectText: ((String, Bool) -> Void)? = nil
     let onPin: (ClipboardItemSummary) -> Void
     let onDelete: (ClipboardItemSummary) -> Void
     let onClearUnpinned: () -> Void
@@ -70,8 +72,9 @@ struct NotchPanelContent: View {
                     HStack(spacing: 8) {
                         // Tab switcher pills
                         HStack(spacing: 2) {
-                            tabButton(title: "Clipboard", icon: "doc.on.clipboard", tab: .clipboard)
-                            tabButton(title: "Shortcuts", icon: "bolt.fill",        tab: .shortcuts)
+                            tabButton(title: "Clipboard", icon: "doc.on.clipboard",  tab: .clipboard)
+                            tabButton(title: "OCR",       icon: "text.viewfinder",   tab: .ocr)
+                            tabButton(title: "Shortcuts", icon: "bolt.fill",         tab: .shortcuts)
                         }
                         .padding(3)
                         .background(Color.white.opacity(0.06))
@@ -115,6 +118,11 @@ struct NotchPanelContent: View {
                             Text("\(viewModel.items.count) items")
                                 .font(.system(size: 10))
                                 .foregroundColor(.secondary)
+                        } else if activeTab == .ocr {
+                            let imageCount = viewModel.items.filter { $0.type == .image }.count
+                            Text("\(imageCount) images")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
                         }
                     }
                     .padding(.horizontal, 12)
@@ -126,6 +134,8 @@ struct NotchPanelContent: View {
                 // ── Content area ──
                 if activeTab == .clipboard {
                     clipboardContent
+                } else if activeTab == .ocr {
+                    ocrContent
                 } else {
                     shortcutsContent
                 }
@@ -169,6 +179,9 @@ struct NotchPanelContent: View {
         .onAppear {
             viewModel.reload()
             shortcutsViewModel.reload()
+            if viewModel.items.first?.type == .image {
+                activeTab = .ocr
+            }
             withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) { isVisible = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { searchFocused = true }
         }
@@ -242,6 +255,19 @@ struct NotchPanelContent: View {
         }
     }
 
+    // MARK: - OCR Tab
+
+    @ViewBuilder
+    private var ocrContent: some View {
+        OCRTabContent(
+            viewModel: viewModel,
+            searchQuery: searchQuery,
+            onSelectText: { text, paste in
+                onSelectText?(text, paste)
+            }
+        )
+    }
+
     // MARK: - Shortcuts Tab
 
     @ViewBuilder
@@ -257,7 +283,7 @@ struct NotchPanelContent: View {
 
     private var searchField: some View {
         NavigableTextField(
-            placeholder: activeTab == .clipboard ? "Search clipboard…" : "Search shortcuts…",
+            placeholder: activeTab == .clipboard ? "Search clipboard…" : (activeTab == .ocr ? "Search image text…" : "Search shortcuts…"),
             text: $searchQuery,
             isFocused: $searchFocused,
             onNavigate: handleSearchNav
@@ -287,6 +313,25 @@ struct NotchPanelContent: View {
     // MARK: - Keyboard handling
 
     private func handleKeyPress(_ press: KeyPress) -> KeyPress.Result {
+        if activeTab == .ocr {
+            switch press.key {
+            case .return:
+                let paste = press.modifiers.contains(.command)
+                let imageItems = viewModel.items.filter { $0.type == .image }
+                if let firstImg = imageItems.first,
+                   let text = firstImg.extractedText, !text.isEmpty {
+                    onSelectText?(text, paste)
+                    return .handled
+                }
+                return .ignored
+            case .tab:
+                searchFocused.toggle()
+                return .handled
+            default:
+                break
+            }
+        }
+
         // Keyboard nav is only active on the clipboard tab
         guard activeTab == .clipboard else { return .ignored }
         let count = displayedItems.count

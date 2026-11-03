@@ -44,6 +44,11 @@ class ClipboardStore {
                 t.add(column: "thumbnail", .blob)
             }
         }
+        migrator.registerMigration("v4") { db in
+            try db.alter(table: "items") { t in
+                t.add(column: "extractedText", .text)
+            }
+        }
         try migrator.migrate(db)
     }
 
@@ -61,8 +66,8 @@ class ClipboardStore {
             )
             if let existingID {
                 try db.execute(
-                    sql: "UPDATE items SET createdAt = ?, preview = ?, thumbnail = ? WHERE id = ?",
-                    arguments: [item.createdAt, item.preview, item.thumbnail, existingID]
+                    sql: "UPDATE items SET createdAt = ?, preview = ?, thumbnail = ?, extractedText = ? WHERE id = ?",
+                    arguments: [item.createdAt, item.preview, item.thumbnail, item.extractedText, existingID]
                 )
             } else {
                 try item.insert(db)
@@ -87,6 +92,12 @@ class ClipboardStore {
     func fetchContent(id: String) throws -> Data? {
         try db.read { db in
             try Data.fetchOne(db, sql: "SELECT content FROM items WHERE id = ?", arguments: [id])
+        }
+    }
+
+    func updateExtractedText(id: String, text: String) throws {
+        try db.write { db in
+            try db.execute(sql: "UPDATE items SET extractedText = ? WHERE id = ?", arguments: [text, id])
         }
     }
 

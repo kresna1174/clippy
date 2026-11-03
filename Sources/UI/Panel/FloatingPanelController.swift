@@ -46,6 +46,9 @@ class FloatingPanelController {
             onSelect: { [weak self] item, isCommandClick in
                 self?.handleSelect(item: item, paste: isCommandClick)
             },
+            onSelectText: { [weak self] text, isCommandClick in
+                self?.handleSelectText(text: text, paste: isCommandClick)
+            },
             onPin: { [weak self] item in
                 guard let self else { return }
                 try? self.store.togglePin(id: item.id)
@@ -100,6 +103,16 @@ class FloatingPanelController {
 
     private func handleSelect(item: ClipboardItemSummary, paste: Bool) {
         ClipboardPasteboardWriter.write(item, store: store)
+        hide()
+        if paste {
+            simulatePaste(into: previousApp)
+        }
+    }
+
+    private func handleSelectText(text: String, paste: Bool) {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(text, forType: .string)
         hide()
         if paste {
             simulatePaste(into: previousApp)

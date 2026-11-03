@@ -67,8 +67,23 @@ class ClipboardMonitor {
                 return nil
             }
             let thumbnail = Self.makeThumbnail(from: rep, maxDimension: Self.thumbnailMaxDimension)
+
+            // Extract text via Vision OCR
+            let ocrText = TextRecognitionService.recognizeText(from: rep)
+            let previewText: String
+            if let ocr = ocrText, !ocr.isEmpty {
+                let firstLine = ocr.components(separatedBy: .newlines).first?.trimmingCharacters(in: .whitespaces) ?? ""
+                previewText = "📸 " + (firstLine.isEmpty ? "Image \(png.count / 1024)KB" : firstLine)
+            } else {
+                previewText = "Image \(png.count / 1024)KB"
+            }
+
             return ClipboardItem(
-                type: .image, content: png, preview: "Image \(png.count / 1024)KB", thumbnail: thumbnail
+                type: .image,
+                content: png,
+                preview: previewText,
+                thumbnail: thumbnail,
+                extractedText: ocrText
             )
         }
         return nil
