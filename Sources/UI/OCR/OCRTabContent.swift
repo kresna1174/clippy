@@ -6,6 +6,7 @@ struct OCRTabContent: View {
     @ObservedObject var viewModel: PanelViewModel
     var searchQuery: String = ""
     let onSelectText: (String, Bool) -> Void
+    let onDelete: (ClipboardItemSummary) -> Void
 
     @State private var selectedImageID: String? = nil
     @State private var isCopied = false
@@ -167,6 +168,11 @@ struct OCRTabContent: View {
                     .stroke(isSelected ? Color.accentColor : Color.white.opacity(0.1), lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .contextMenu {
+                Button("Delete", role: .destructive) {
+                    deleteItem(item)
+                }
+            }
         }
         .buttonStyle(.plain)
     }
@@ -240,6 +246,19 @@ struct OCRTabContent: View {
                 }
             }
             Spacer()
+
+            Button(action: {
+                deleteItem(item)
+            }) {
+                Image(systemName: "trash")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .padding(6)
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+            .help("Delete image from history (⌫)")
         }
         .padding(8)
         .background(Color.white.opacity(0.04))
@@ -316,6 +335,25 @@ struct OCRTabContent: View {
     @ViewBuilder
     private func actionFooter(for item: ClipboardItemSummary) -> some View {
         HStack(spacing: 8) {
+            // Delete button
+            Button(action: {
+                deleteItem(item)
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 11))
+                    Text("Delete")
+                        .font(.system(size: 11, weight: .medium))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.white.opacity(0.06))
+                .foregroundColor(.secondary)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+            .help("Delete this image from history (⌫)")
+
             // Feedback badge
             if isCopied {
                 HStack(spacing: 4) {
@@ -381,6 +419,21 @@ struct OCRTabContent: View {
     }
 
     // MARK: - Actions & Helpers
+
+    func deleteItem(_ item: ClipboardItemSummary) {
+        let currentItems = imageItems
+        if let currentIndex = currentItems.firstIndex(where: { $0.id == item.id }) {
+            if currentItems.count > 1 {
+                let nextIndex = (currentIndex + 1 < currentItems.count) ? currentIndex + 1 : currentIndex - 1
+                selectedImageID = currentItems[nextIndex].id
+            } else {
+                selectedImageID = nil
+            }
+        }
+        fullImageCache.removeValue(forKey: item.id)
+        onDemandText.removeValue(forKey: item.id)
+        onDelete(item)
+    }
 
     func copyCurrentText(paste: Bool) {
         guard let text = currentText, !text.isEmpty else { return }

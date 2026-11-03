@@ -82,7 +82,7 @@ struct NotchPanelContent: View {
 
                         Spacer()
 
-                        if activeTab == .clipboard && !viewModel.items.isEmpty {
+                        if (activeTab == .clipboard || activeTab == .ocr) && !viewModel.items.isEmpty {
                             // Clear history button
                             Button(action: { showClearConfirm = true }) {
                                 Image(systemName: "trash")
@@ -264,7 +264,8 @@ struct NotchPanelContent: View {
             searchQuery: searchQuery,
             onSelectText: { text, paste in
                 onSelectText?(text, paste)
-            }
+            },
+            onDelete: onDelete
         )
     }
 
@@ -322,6 +323,15 @@ struct NotchPanelContent: View {
                    let text = firstImg.extractedText, !text.isEmpty {
                     onSelectText?(text, paste)
                     return .handled
+                }
+                return .ignored
+            case .delete, .deleteForward:
+                if !searchFocused {
+                    let imageItems = viewModel.items.filter { $0.type == .image }
+                    if let firstImg = imageItems.first {
+                        onDelete(firstImg)
+                        return .handled
+                    }
                 }
                 return .ignored
             case .tab:
